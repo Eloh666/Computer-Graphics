@@ -10,18 +10,20 @@ effect eff;
 target_camera cam;
 
 bool load_content() {
-  // *********************************
-  // Set geometry type to lines
-
-  // *********************************
+	geom.set_type(GL_LINES);
   // Positions
   vector<vec3> positions{
-      // *********************************
-      // Add the position data for four lines here
+      vec3(1.0f, 1.0f, 0.0f),
+      vec3(-1.0f, 1.0f, 0.0f),
 
+	  vec3(-1.0f, 1.0f, 0.0f),
+	  vec3(-1.0f, -1.0f, 0.0f),
 
+      vec3(-1.0f, -1.0f, 0.0f),
+      vec3(1.0f, -1.0f, 0.0f),
 
-      // *********************************
+	  vec3(1.0f, -1.0f, 0.0f),
+	  vec3(1.0f, 1.0f, 0.0f)
   };
   // Colours
   vector<vec4> colours{vec4(1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f),
