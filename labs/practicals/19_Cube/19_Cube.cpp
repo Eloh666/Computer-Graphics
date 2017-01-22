@@ -5,6 +5,7 @@ using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
+
 geometry geom;
 effect eff;
 target_camera cam;
@@ -19,25 +20,71 @@ bool load_content() {
       // Add the position data for triangles here, (6 verts per side)
       // Front
 
+	  vec3(1.0f, -1.0f, 0.0f),
+	  vec3(1.0f, 1.0f, 0.0f),
+	  vec3(-1.0f, 1.0f, 0.0f),
+
+	  vec3(1.0f, -1.0f, 0.0f), 
+	  vec3(-1.0f, 1.0f, 0.0f),
+	  vec3(-1.0f, -1.0f, 0.0f),
 
       // Back
 
+	  vec3(-1.0f, -1.0f, -2.0f),
+	  vec3(-1.0f, 1.0f, -2.0f),
+	  vec3(1.0f, -1.0f, -2.0f),
+
+	  vec3(-1.0f, 1.0f, -2.0f),
+	  vec3(1.0f, 1.0f, -2.0f),
+	  vec3(1.0f, -1.0f, -2.0f),
 
       // Right
 
 
+	  vec3(1.0f, -1.0f, -2.0f),
+	  vec3(1.0f, 1.0f, -2.0f),
+	  vec3(1.0f, 1.0f, 0.0f),
+
+	  vec3(1.0f, 1.0f, 0.0f),
+	  vec3(1.0f, -1.0f, 0.0f),
+	  vec3(1.0f, -1.0f, -2.0f),
+	 
+
       // Left
 
+	  vec3(-1.0f, -1.0f, 0.0f),
+	  vec3(-1.0f, 1.0f, 0.0f),
+	  vec3(-1.0f, 1.0f, -2.0f),
+
+	  vec3(-1.0f, 1.0f, -2.0f),
+	  vec3(-1.0f, -1.0f, -2.0f),
+	  vec3(-1.0f, -1.0f, 0.0f),
 
       // Top
 
+	  vec3(1.0f, 1.0f, 0.0f),
+	  vec3(1.0f, 1.0f, -2.0f),
+	  vec3(-1.0f, 1.0f, -2.0f),
+
+	  vec3(1.0f, 1.0f, 0.0f),
+	  vec3(-1.0f, 1.0f, -2.0f),
+	  vec3(-1.0f, 1.0f, 0.0f),
 
       // Bottom
+
+	  vec3(-1.0f, -1.0f, -2.0f),
+	  vec3(1.0f, -1.0f, -2.0f),
+	  vec3(1.0f, -1.0f, 0.0f),
+
+	  vec3(1.0f, -1.0f, 0.0f),
+	  vec3(-1.0f, -1.0f, 0.0f),
+	  vec3(-1.0f, -1.0f, -2.0f),
 
 
       // *********************************
   };
   // Colours
+
   vector<vec4> colours;
   for (auto i = 0; i < positions.size(); ++i) {
     colours.push_back(vec4(1.0, i % 2, 0.0f, 1.0f)); // Notice how I got those Rad colours?
