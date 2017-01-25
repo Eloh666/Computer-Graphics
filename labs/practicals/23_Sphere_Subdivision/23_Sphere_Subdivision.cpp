@@ -11,27 +11,36 @@ target_camera cam;
 float theta = 0.0f;
 float rho = 0.0f;
 
-const int subdivisions = 5;
+const int subdivisions = 6;
+
+
+void triangle(const vector<vec3> &points, vector<vec3> &positions, vector<vec4> &colours) {
+	positions.insert(positions.end(), points.begin(), points.end());
+	for (auto i = 0; i < 3; ++i) {
+		colours.push_back(vec4(0.6f, i % 2, i % 3, 1.0f));
+	}
+
+}
 
 void divide_triangle(const vector<vec3> &points, int divisions, vector<vec3> &positions, vector<vec4> &colours) {
   // IF we have more divisions to do?
   if (divisions > 0) {
     // *********************************
-    // Calculate new vertices to work on (Normalize each element!)
-
-
-    // Divide new triangles
-
+    
+	  auto v0 = normalize(points[0] + points[1]);
+	  auto v1 = normalize(points[0] + points[2]);
+	  auto v2 = normalize(points[1] + points[2]);
+	  divide_triangle({points[0], v0, v1}, divisions - 1, positions, colours);
+	  divide_triangle({points[2], v1, v2}, divisions - 1, positions, colours);
+	  divide_triangle({points[1], v2, v0}, divisions - 1, positions, colours);
+	  divide_triangle({v0, v2, v1}, divisions - 1, positions, colours);
 
 
 
     // *********************************
   } else {
-    positions.insert(positions.end(), points.begin(), points.end());
-    for (auto i = 0; i < 3; ++i) {
-      colours.push_back(vec4(0.6f, i % 2, i % 3, 1.0f));
+	  triangle(points, positions, colours);
     }
-  }
 }
 
 bool load_content() {

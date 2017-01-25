@@ -88,7 +88,7 @@ bool render() {
 
   // Combine matrices to set M - remember multiplication order
 
-  M = T * R * S;
+  M = T * (R * S);
 
   // *********************************
   // Create MVP matrix
