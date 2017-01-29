@@ -86,7 +86,7 @@ bool render() {
   // Set the uniform values for textures
   static int tex_indices[] = {0, 1};
   glUniform1iv(eff.get_uniform_location("tex"), 2, tex_indices);
-  glUniform1i(eff.get_uniform_location("blend"), 2);
+  glUniform1i(eff.get_uniform_location("blendMap"), 2);
 
   // Render the mesh
   renderer::render(m);
