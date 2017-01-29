@@ -17,9 +17,9 @@ void main() {
   vec4 color2 = texture(tex[1], tex_coord);
   vec4 blend = texture(blendMap, tex_coord);
 
-  //colour = mix(color1, color2, blend.r)
+  colour = mix(color1, color2, blend.r);
 
-  colour = blend;
+  //colour = texture(tex[0], tex_coord);
 
   // *********************************
 }
