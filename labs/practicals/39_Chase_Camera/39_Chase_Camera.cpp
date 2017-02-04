@@ -12,15 +12,17 @@ chase_camera cam;
 double cursor_x = 0.0;
 double cursor_y = 0.0;
 
+
 bool initialise() {
-  // *********************************
-  // Set input mode - hide the cursor
+	// *********************************
+	// Set input mode - hide the cursor
 
-  // Capture initial mouse position
+	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  // *********************************
-
-  return true;
+	// Capture initial mouse position
+	glfwGetCursorPos(renderer::get_window(), &cursor_x, &cursor_y);
+	// *********************************
+	return true;
 }
 
 bool load_content() {
@@ -90,45 +92,67 @@ bool update(float delta_time) {
   // *********************************
   // Get the current cursor position
 
+  glfwGetCursorPos(renderer::get_window(), &current_x, &current_y);
+
   // Calculate delta of cursor positions from last frame
-
-
   // Multiply deltas by ratios and delta_time - gets actual change in orientation
+  auto x = (current_x - cursor_x) * ratio_width * delta_time;
+  auto y = -(current_y - cursor_y) * ratio_height * delta_time;
 
 
   // Rotate cameras by delta
   // x - delta_y
   // y - delta_x
-  // z - 0
+  // z - 0 
+
+  cam.rotate(vec3(x, y, 0));
 
   // Use keyboard to rotate target_mesh - QE rotate on y-axis
 
+  vec3 selectedRotation;
 
-
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_Q)) {
+	  selectedRotation = vec3(0.0f, -pi<float>() * delta_time, 0.0f);
+  }
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_E)) {
+	  selectedRotation = vec3(0.0f, pi<float>() * delta_time, 0.0f);
+  }
+  target_mesh.get_transform().rotate(selectedRotation);
 
   // Use keyboard to move the target_mesh - WSAD
 
+  vec3 positionOffset;
 
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_D)) {
+    positionOffset = +vec3(0.0f, 1.0f, 0.0f) * delta_time;
+  }
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_A)) {
+    positionOffset = -vec3(0.0f, 1.0f, 0.0f) * delta_time;
+  }
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_W)) {
+    positionOffset = +vec3(1.0f, 0.0f, 0.0f) * delta_time;
+  }
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_S)) {
+    positionOffset = -vec3(1.0f, 0.0f, 0.0f) * delta_time;
+  }
 
-
-
-
-
-
-
-
-
-
-
-
-
+  target_mesh.get_transform().position += positionOffset;
 
   // Move camera - update target position and rotation
 
+  auto fullRotation = target_mesh.get_transform().orientation;
+
+  cam.move(target_mesh.get_transform().position, eulerAngles(fullRotation));
+
+
   // Update the camera
+
+  cam.update(delta_time);
 
   // Update cursor pos
 
+  cursor_x = current_x;
+  cursor_y = current_y;
 
   // *********************************
   return true;
