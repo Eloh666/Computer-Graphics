@@ -17,7 +17,10 @@ bool initialise() {
   // *********************************
   // Set input mode - hide the cursor
 
+	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
   // Capture initial mouse position
+	glfwGetCursorPos(renderer::get_window(), &cursor_x, &cursor_y);
 
   // *********************************
 
@@ -88,50 +91,61 @@ bool update(float delta_time) {
   double current_y;
   // *********************************
   // Get the current cursor position
-
+  glfwGetCursorPos(renderer::get_window(), &current_x, &current_y);
   // Calculate delta of cursor positions from last frame
 
 
   // Multiply deltas by ratios and delta_time - gets actual change in orientation
 
+  auto deltaY = (current_x - cursor_x) * ratio_width * delta_time * 3;
+  auto deltaX = (current_y - cursor_y) * ratio_height * delta_time * 3;
 
   // Rotate cameras by delta
   // delta_y - x-axis rotation
   // delta_x - y-axis rotation
 
+  cam.rotate(-deltaX, deltaY);
+
   // Use keyboard to move the target_mesh- WSAD
   // Also remember to translate camera
 
+  vec3 positionOffset;
 
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_D)) {
+	  positionOffset = +vec3(0.0f, 1.0f, 0.0f) * delta_time;
+  }
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_A)) {
+	  positionOffset = -vec3(0.0f, 1.0f, 0.0f) * delta_time;
+  }
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_W)) {
+	  positionOffset = +vec3(1.0f, 0.0f, 0.0f) * delta_time;
+  }
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_S)) {
+	  positionOffset = -vec3(1.0f, 0.0f, 0.0f) * delta_time;
+  }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  target_mesh.get_transform().position += positionOffset;
+  
   // Use UP and DOWN to change camera distance
 
-
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_UP)) {
+	  cam.move(1 * delta_time);
+  }
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_DOWN)) {
+	  cam.move(-1 * delta_time);
+  }
 
 
 
 
   // Update the camera
 
+  cam.update(delta_time);
+
   // Update cursor pos
 
+  cursor_x = current_x;
+  cursor_y = current_y;
 
   // *********************************
   return true;
