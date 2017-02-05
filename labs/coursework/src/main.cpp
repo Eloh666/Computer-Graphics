@@ -5,20 +5,13 @@ using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
-geometry geom;
 effect eff;
 target_camera cam;
 
-bool load_content() {
-  // Create triangle data
-  vector<vec3> positions{vec3(0.0f, 1.0f, 0.0f), vec3(-1.0f, -1.0f, 0.0f), vec3(1.0f, -1.0f, 0.0f)
+mesh m;
 
-  };
-  // Colours
-  vector<vec4> colours{vec4(1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f)};
-  // Add to the geometry
-  geom.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
-  geom.add_buffer(colours, BUFFER_INDEXES::COLOUR_BUFFER);
+bool load_content() {
+	m = mesh(geometry("models/Katana.obj"));
 
   // Load in shaders
   eff.add_shader("shaders/basic.vert", GL_VERTEX_SHADER);
@@ -44,14 +37,14 @@ bool render() {
   // Bind effect
   renderer::bind(eff);
   // Create MVP matrix
-  mat4 M(1.0f);
+  auto M = m.get_transform().get_transform_matrix();
   auto V = cam.get_view();
   auto P = cam.get_projection();
   auto MVP = P * V * M;
   // Set MVP matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
   // Render geometry
-  renderer::render(geom);
+  renderer::render(m);
   return true;
 }
 

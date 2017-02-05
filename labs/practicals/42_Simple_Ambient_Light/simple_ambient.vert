@@ -16,10 +16,9 @@ layout(location = 0) out vec4 vertex_colour;
 void main() {
   // *********************************
   // Calculate position
-
+  gl_Position = MVP * vec4(position, 1.0);
   // Calculate ambient component
-
   // Output vertex colour
-
+  vertex_colour = ambient_intensity * material_colour;
   // *********************************
 }
