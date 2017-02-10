@@ -11,6 +11,7 @@ texture tex;
 target_camera cam;
 vector<point_light> points(4);
 vector<spot_light> spots(5);
+map<string, material> materials;
 
 bool load_content() {
   // Create plane mesh
@@ -48,111 +49,151 @@ bool load_content() {
   // - all specular is white
   // - all shininess is 25
   // Red box
-
-
-
+  materials["box"].set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+  materials["box"].set_diffuse(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+  materials["box"].set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  materials["box"].set_shininess(25.0f);
 
   // Green tetra
 
-
+  materials["tetra"].set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+  materials["tetra"].set_diffuse(vec4(0.0f, 1.0f, 0.0f, 1.0f));
+  materials["tetra"].set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  materials["tetra"].set_shininess(25.0f);
 
 
   // Blue pyramid
 
-
+  materials["pyramid"].set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+  materials["pyramid"].set_diffuse(vec4(0.0f, 0.0f, 1.0f, 1.0f));
+  materials["pyramid"].set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  materials["pyramid"].set_shininess(25.0f);
 
 
   // Yellow disk
 
-
+  materials["disk"].set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+  materials["disk"].set_diffuse(vec4(0.0f, 1.0f, 1.0f, 1.0f));
+  materials["disk"].set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  materials["disk"].set_shininess(25.0f);
 
 
   // Magenta cylinder
 
-
+  materials["cylinder"].set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+  materials["cylinder"].set_diffuse(vec4(1.0f, 0.0f, 1.0f, 1.0f));
+  materials["cylinder"].set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  materials["cylinder"].set_shininess(25.0f);
 
 
   // Cyan sphere
 
-
+  materials["sphere"].set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+  materials["sphere"].set_diffuse(vec4(0.75f, 1.0f, 1.0f, 1.0f));
+  materials["sphere"].set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  materials["sphere"].set_shininess(25.0f);
 
 
   // White torus
 
-
+  materials["torus"].set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+  materials["torus"].set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  materials["torus"].set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  materials["torus"].set_shininess(25.0f);
 
 
   // *********************************
 
   // Load texture
-  tex = texture("textures/checker.png");
+  tex = texture("textures/checker2.png");
 
   // Set lighting values
   // *********************************
   // Point 0, Position (-25, 5, -15)
   // Red, 20 range
-
-
+  points[0].set_position(vec3(-25, 5, -15));
+  points[0].set_light_colour(vec4(1, 0, 0, 1));
+  points[0].set_range(20);
 
   // Point 1, Position (-25, 5, -35)
   // Red,20 range
 
-
+  points[1].set_position(vec3(-25, 5, -35));
+  points[1].set_light_colour(vec4(1, 0, 0, 1));
+  points[1].set_range(20);
 
   // Point 2,Position (-10, 5, -15)
   // Red,20 range
 
-
+  points[2].set_position(vec3(-10, 5, -15));
+  points[2].set_light_colour(vec4(1, 0, 0, 1));
+  points[2].set_range(20);
 
   // Point 3,Position (-10, 5, -35)
   // Red,20 range
 
-
+  points[3].set_position(vec3(-10, 5, -35));
+  points[3].set_light_colour(vec4(1, 0, 0, 1));
+  points[3].set_range(20);
 
   // Spot 0, Position (-25, 10, -15)
   // Green, Direction (1, -1, -1) normalized
   // 20 range,0.5 power
 
-
-
-
+  spots[0].set_position(vec3(-25, 10, -15));
+  spots[0].set_light_colour(vec4(0, 1, 0, 1));
+  spots[0].set_range(20);
+  spots[0].set_power(0.5f);
+  spots[0].set_direction(normalize(vec3(1, -1, -1)));
 
   // Spot 1,Position (-25, 10, -35)
   // Green,Direction (1, -1, 1) normalized
   // 20 range,0.5 power
 
-
-
-
+  spots[1].set_position(vec3(-25, 10, -15));
+  spots[1].set_light_colour(vec4(0, 1, 0, 1));
+  spots[1].set_range(20);
+  spots[1].set_power(0.5f);
+  spots[1].set_direction(normalize(vec3(1, -1, 1)));
 
   // Spot 2,Position (-10, 10, -15)
   // Green,Direction (-1, -1, -1) normalized
   // 20 range,0.5 power
 
-
-
-
+  spots[2].set_position(vec3(-25, 10, -15));
+  spots[2].set_light_colour(vec4(0, 1, 0, 1));
+  spots[2].set_range(20);
+  spots[2].set_power(0.5f);
+  spots[2].set_direction(normalize(vec3(-1, -1, -1)));
 
   // Spot 3,Position (-10, 10, -35)
   // Green,Direction (-1, -1, 1) normalized
   // 20 range,0.5 power
 
-
-
-
+  spots[3].set_position(vec3(-25, 10, -15));
+  spots[3].set_light_colour(vec4(0, 1, 0, 1));
+  spots[3].set_range(20);
+  spots[3].set_power(0.5f);
+  spots[3].set_direction(normalize(vec3(-1, -1, -1)));
 
   // Spot 4,Position (-17.5, 15, -25)
   // Blue,Direction (0, -1, 0)
   // 30 range,1.0 power
 
-
-
-
+  spots[4].set_position(vec3(-25, 10, -15));
+  spots[4].set_light_colour(vec4(0, 0, 1, 1));
+  spots[4].set_range(20);
+  spots[4].set_power(1.0f);
+  spots[4].set_direction(normalize(vec3(0, -1, 0)));
 
   // Load in shaders
 
+  // Load in shaders
+  eff.add_shader("51_Multiple_Lights/multi-light.vert", GL_VERTEX_SHADER);
+  eff.add_shader("51_Multiple_Lights/multi-light.frag", GL_FRAGMENT_SHADER);
 
   // Build effect
+  eff.build();
 
   // *********************************
   // Set camera properties
@@ -201,22 +242,38 @@ bool render() {
                        value_ptr(MVP));                 // Pointer to matrix data
     // *********************************
     // Set M matrix uniform
+	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 
     // Set N matrix uniform - remember - 3x3 matrix
+	auto normal = m.get_transform().get_normal_matrix();
+	glUniformMatrix3fv(eff.get_uniform_location("N"),
+		1,
+		GL_FALSE,
+		value_ptr(normal));
 
-    // Bind material
+	// Bind material
+	renderer::bind(materials[e.first], "mat");
 
     // Bind point lights
+	renderer::bind(spots, "spots");
 
     // Bind spot lights
+	renderer::bind(points, "points");
 
-    // Bind texture
+	// Bind texture
+	renderer::bind(tex, 0);
 
-    // Set tex uniform
+	// Set tex uniform
+	glUniform1i(eff.get_uniform_location("tex"), 0);
 
-    // Set eye position- Get this from active camera
-
-    // Render mesh
+	// Set eye position - Get this from active camera
+	glUniform3fv(
+		eff.get_uniform_location("eye_pos"),
+		1,
+		value_ptr(cam.get_position())
+		);
+	// Render mesh
+	renderer::render(m);
 
     // *********************************
   }

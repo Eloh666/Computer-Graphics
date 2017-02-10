@@ -38,21 +38,32 @@ void main() {
 
   // *********************************
   // Calculate ambient component
+  vec4 ambient = light.ambient_intensity * mat.diffuse_reflection;
 
-  // Calculate diffuse component
+  // Calculate k
+  float diffuseK = max(dot(normal, light.light_dir), 0.0);
+
+  // Calculate diffuse
+  vec4 diffuse = diffuseK * (mat.diffuse_reflection * light.light_colour);
 
   // Calculate view direction
+  vec3 viewDir = normalize(eye_pos - position);
 
-  // Calculate half vector
+  // Calculate half vector between view_dir and light_dir
+  vec3 half_vector = normalize(light.light_dir + viewDir);
 
-  // Calculate specular component
+  // Calculate k
+  float k = pow(max(dot(normal, half_vector), 0.0), mat.shininess);
+
+  // Calculate specular
+  vec4 specular = k * (light.light_colour * mat.specular_reflection);
 
   // Sample texture
-
+  vec4 texColor = texture(tex, tex_coord);
   // Calculate primary colour component
-
+  vec4 primary = mat.emissive + ambient + diffuse;
   // Calculate final colour - remember alpha
-
-
+  colour = primary * texColor + specular;
+  colour[3] = 1.0f;
   // *********************************
 }
