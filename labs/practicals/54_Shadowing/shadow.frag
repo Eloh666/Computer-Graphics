@@ -60,8 +60,10 @@ void main() {
   // Calculate shade factor
 
   // Calculate view direction
+  vec3 view_dir = normalize(eye_pos - position);
 
   // Sample texture
+  vec4 tex_colour = texture(tex, tex_coord);
 
   // Calculate spot light
 

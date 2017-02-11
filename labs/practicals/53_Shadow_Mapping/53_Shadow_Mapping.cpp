@@ -11,18 +11,24 @@ texture tex;
 target_camera cam;
 spot_light spot;
 shadow_map shadow;
+map<string, material> materials;
 
 bool load_content() {
   // *********************************
   // Create shadow map- use screen size
+	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
 
   // Create plane mesh
+	meshes["plane"] = mesh(geometry_builder::create_plane());
 
   // Create "teapot" mesh by loading in models/teapot.obj
+	meshes["teapot"] = mesh(geometry("models/teapot.obj"));
 
   // Need to rotate the teapot on x by negative pi/2
+	meshes["teapot"].get_transform().rotate(vec3(-half_pi<float>(), 0.0f, 0.0f));
 
   // Scale the teapot - (0.1, 0.1, 0.1)
+	meshes["teapot"].get_transform().scale = vec3(0.1, 0.1, 0.1);
 
   // ***********************
   // Set materials
@@ -31,12 +37,18 @@ bool load_content() {
   // - all shininess is 25
   // ***********************
   // White plane
-
+	materials["plane"].set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	materials["plane"].set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	materials["plane"].set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	materials["plane"].set_shininess(25.0f);
 
 
 
   // Red teapot
-
+	materials["teapot"].set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	materials["teapot"].set_diffuse(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	materials["teapot"].set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	materials["teapot"].set_shininess(25.0f);
 
 
 
@@ -88,11 +100,11 @@ bool update(float delta_time) {
 bool render() {
   // *********************************
   // Set render target to shadow map
-
+	renderer::set_render_target(shadow);
   // Clear depth buffer bit
-
+	glClear(GL_DEPTH_BUFFER_BIT);
   // Set render mode to cull face
-
+	glCullFace(GL_FRONT);
   // *********************************
 
   // Bind shader

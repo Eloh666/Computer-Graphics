@@ -16,16 +16,19 @@ shadow_map shadow;
 bool load_content() {
   // *********************************
   // Create shadow map- use screen size
-
+  shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
+  
   // Create plane mesh
-
+  meshes["plane"] = mesh(geometry_builder::create_plane());
+  
   // Create "teapot" mesh by loading in models/teapot.obj
-
-  // Need to rotate the teapot on x by negative pi/2
+  meshes["teapot"] = mesh(geometry("models/teapot.obj"));
+  
+	// Need to rotate the teapot on x by negative pi/2
+  meshes["teapot"].get_transform().rotate(vec3(-half_pi<float>(), 0.0f, 0.0f));
 
   // Scale the teapot - (0.1, 0.1, 0.1)
-
-  // *********************************
+  meshes["teapot"].get_transform().scale = vec3(0.1, 0.1, 0.1);
 
   // Load texture
   tex = texture("textures/checker.png");
@@ -84,7 +87,8 @@ bool update(float delta_time) {
 
   // *********************************
   // Update the shadow map properties from the spot light
-
+  shadow.light_position = spot.get_position();
+  shadow.light_dir = spot.get_direction();
 
   // *********************************
 
@@ -100,11 +104,11 @@ bool update(float delta_time) {
 bool render() {
   // *********************************
   // Set render target to shadow map
-
+	renderer::set_render_target(shadow);
   // Clear depth buffer bit
-
+	glClear(GL_DEPTH_BUFFER_BIT);
   // Set render mode to cull face
-
+	glCullFace(GL_FRONT);
   // *********************************
 
   // Bind shader
@@ -116,7 +120,7 @@ bool render() {
     // Create MVP matrix
     auto M = m.get_transform().get_transform_matrix();
     // View matrix taken from shadow map
-
+	auto V = shadow.get_view();
     // *********************************
 
     auto P = cam.get_projection();
@@ -131,9 +135,9 @@ bool render() {
   }
   // *********************************
   // Set render target back to the screen
-
+  renderer::set_render_target();
   // Set cull face to back
-
+  glCullFace(GL_BACK);
   // *********************************
 
   // Bind shader
@@ -158,27 +162,37 @@ bool render() {
     glUniformMatrix3fv(main_eff.get_uniform_location("N"), 1, GL_FALSE,
                        value_ptr(m.get_transform().get_normal_matrix()));
     // *********************************
+	auto lightMVP = M * shadow.get_view() * cam.get_projection();
     // Set light transform
-
-
-
-
+	glUniformMatrix4fv(main_eff.get_uniform_location("lightMVP"),
+		1,
+		GL_FALSE,
+		value_ptr(lightMVP));
 
     // Bind material
+	renderer::bind(m.get_material(), "mat");
 
     // Bind spot lights
+	renderer::bind(spot, "spot");
 
-    // Bind texture
+	// Bind texture
+	renderer::bind(tex, 0);
 
-    // Set tex uniform
+	// Set tex uniform
+	glUniform1i(main_eff.get_uniform_location("tex"), 0);
 
     // Set eye position
+	glUniform3fv(
+		main_eff.get_uniform_location("eye_pos"),
+		1,
+		value_ptr(cam.get_position())
+		);
 
     // Bind shadow map texture - use texture unit 1
-
+	renderer::bind(shadow_eff, 1);
 
     // Render mesh
-
+	renderer::render(m);
     // *********************************
   }
 

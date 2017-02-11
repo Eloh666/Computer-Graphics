@@ -47,10 +47,10 @@ void main() {
   vec4 diffuse = diffuseK * (mat.diffuse_reflection * light.light_colour);
 
   // Calculate view direction
-  vec3 viewDir = normalize(eye_pos - position);
+  vec3 view_dir = normalize(eye_pos - position);
 
   // Calculate half vector between view_dir and light_dir
-  vec3 half_vector = normalize(light.light_dir + viewDir);
+  vec3 half_vector = normalize(light.light_dir + view_dir);
 
   // Calculate k
   float k = pow(max(dot(normal, half_vector), 0.0), mat.shininess);
