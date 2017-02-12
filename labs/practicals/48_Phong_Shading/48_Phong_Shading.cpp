@@ -16,9 +16,7 @@ bool load_content() {
   // Create plane mesh
   meshes["plane"] = mesh(geometry_builder::create_plane());
   meshes["katana"] = mesh(geometry("models/katy.obj"));
-  meshes["katana"].get_transform().scale = vec3(0.1f, 0.1f, 0.1f);
-  meshes["katana"].get_transform().translate(vec3(0.0f, 7.5f, -30.0f));
-  meshes["katana"].get_transform().rotate(vec3(0.0f, 0.0f, half_pi<float>()));
+  
 
   // Create scene
   meshes["box"] = mesh(geometry_builder::create_box());

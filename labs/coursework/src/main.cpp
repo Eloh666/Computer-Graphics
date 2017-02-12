@@ -1,53 +1,62 @@
-#ifndef graphics_framework.h
-#include <graphics_framework.h>
-#endif
-
-#ifndef glm.hpp
-#include <graphics_framework.h>
 #include <glm\glm.hpp>
-#endif
+#include <graphics_framework.h>
+#include "meshes/katanaMesh.h"
+#include "meshes/terrainMesh.h"
+#include "effects/terrainEff.h"
+#include "effects/katanaEff.h"
+#include "meshes/skyboxMesh.h"
 
-#include "../../../../../GraphicsCoursework/katana.h"
 
 using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
-map<string, mesh> meshes;
-effect eff;
-texture tex;
+
 target_camera staticCam;
 directional_light light;
 vector<point_light> points(4);
 vector<spot_light> spots(5);
-map<string, material> materials;
 free_camera freeCam;
 
+mesh skybox;
+effect skyboxEffect;
+cubemap cube_map;
 
+map<string, mesh> meshes;
+map<string, texture> textures;
+map<string, effect> effects;
 
 bool load_content() {
-	// Create plane mesh
-	meshes["plane"] = mesh(geometry_builder::create_plane());
 
-	meshes["katana"] = createKatana();
+	// Generates the terrain and loads its textures
+	meshes["terrain"] = createTerrainMesh(20, 20, 2.0f);
+	textures["water"] = texture("textures/water.jpg");
+	textures["sand"] = texture("textures/sand.jpg");
+	textures["grass"] = texture("textures/grass.jpg");
+	textures["snow"] = texture("textures/snow.jpg");
+	effects["terrain"] = createTerrainEffect();
 
-	// Load texture
-	tex = texture("textures/grass.jpg");
+	// Generates the night skybox
+	skybox = createSkybox();
+	//array<string, 6> filenames = { "textures/skybox/lagoon_ft.tga", "textures/skybox/lagoon_bk.tga", "textures/skybox/lagoon_up.tga",
+		//"textures/skybox/lagoon_dn.tga", "textures/skybox/lagoon_rt.tga", "textures/skybox/lagoon_lf.tga" };
+	array<string, 6> filenames = { "textures/sahara_ft.jpg", "textures/sahara_bk.jpg", "textures/sahara_up.jpg",
+		"textures/sahara_dn.jpg", "textures/sahara_rt.jpg", "textures/sahara_lf.jpg" };
+	cube_map = cubemap(filenames);
+	skyboxEffect = createTerrainEffect();
+
+
+	// Generates the katana and loads its textures
+	//meshes["katana"] = createKatanaMesh();
+	//textures["katana"] = texture("textures/katDiffuse.tga");
+	//effects["katana"] = createKatanaEffect();
 	
 	// Set lighting values
 	light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
 	light.set_direction(vec3(1.0f, 1.0f, -1.0f));
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-
-
-	// Load in shaders
-	eff.add_shader("shaders/shader.vert", GL_VERTEX_SHADER);
-	// Name of fragment shaders required
-	vector<string> frag_shaders{ "shaders/shader.frag", "shaders/part_direction.frag",
-		"shaders/part_point.frag", "shaders/part_spot.frag" };
-	eff.add_shader(frag_shaders, GL_FRAGMENT_SHADER);
-	// Build effect
-	eff.build();
+	
+	
 
 	// Set camera properties
 	freeCam.set_position(vec3(0.0f, 5.0f, 10.0f));
@@ -100,35 +109,69 @@ bool update(float delta_time) {
 	return true;
 }
 
+void renderSkybox()
+{
+	glDisable(GL_DEPTH_TEST);
+
+	// Bind skybox effect
+	renderer::bind(skyboxEffect);
+
+	// Calculate MVP for the skybox
+
+	auto M = skybox.get_transform().get_transform_matrix();
+	auto V = freeCam.get_view();
+	auto P = freeCam.get_projection();
+	auto MVP = P * V * M;
+
+
+	// Set MVP matrix uniform
+	glUniformMatrix4fv(skyboxEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+
+	// Set cubemap uniform
+	renderer::bind(cube_map, 0);
+	renderer::bind(cube_map, 0);
+
+	// Render skybox
+	renderer::render(skybox);
+
+	// Enable depth test,depth mask,face culling
+	glEnable(GL_DEPTH_TEST);
+}
+
 bool render() {
+
+	// Render skybox
+	renderSkybox();
+
 	// Render meshes
 	for (auto &e : meshes) {
 		auto m = e.second;
+		auto meshName = e.first;
 		// Bind effect
-		renderer::bind(eff);
+		renderer::bind(effects[meshName]);
 		// Create MVP matrix
 		auto M = m.get_transform().get_transform_matrix();
 		auto V = freeCam.get_view();
 		auto P = freeCam.get_projection();
 		auto MVP = P * V * M;
 		// Set MVP matrix uniform
-		glUniformMatrix4fv(eff.get_uniform_location("MVP"), // Location of uniform
+		glUniformMatrix4fv(effects[meshName].get_uniform_location("MVP"), // Location of uniform
 			1,                               // Number of values - 1 mat4
 			GL_FALSE,                        // Transpose the matrix?
 			value_ptr(MVP));                 // Pointer to matrix data
 											 // *********************************
 											 // Set M matrix uniform
-		glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+		glUniformMatrix4fv(effects[meshName].get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 
 		// Set N matrix uniform - remember - 3x3 matrix
 		auto normal = m.get_transform().get_normal_matrix();
-		glUniformMatrix3fv(eff.get_uniform_location("N"),
+		glUniformMatrix3fv(effects[meshName].get_uniform_location("N"),
 			1,
 			GL_FALSE,
 			value_ptr(normal));
 
 		// Bind material
-		renderer::bind(materials[e.first], "mat");
+		renderer::bind(m.get_material(), "mat");
 
 		// Bind point lights
 		renderer::bind(spots, "spots");
@@ -139,15 +182,36 @@ bool render() {
 		// Bind env light
 		renderer::bind(light, "light");
 
-		// Bind texture
-		renderer::bind(tex, 0);
+		if(meshName == "terrain")
+		{
+			// Bind Tex[0] to TU 0, set uniform
+			renderer::bind(textures["water"], 0);
+			glUniform1i(effects[meshName].get_uniform_location("tex[0]"), 0);
+			// *********************************
+			//Bind Tex[1] to TU 1, set uniform
+			renderer::bind(textures["sand"], 1);
+			glUniform1i(effects[meshName].get_uniform_location("tex[1]"), 1);
 
-		// Set tex uniform
-		glUniform1i(eff.get_uniform_location("tex"), 0);
+			// Bind Tex[2] to TU 2, set uniform
+			renderer::bind(textures["grass"], 2);
+			glUniform1i(effects[meshName].get_uniform_location("tex[2]"), 2);
+
+			// Bind Tex[3] to TU 3, set uniform
+			renderer::bind(textures["snow"], 3);
+			glUniform1i(effects[meshName].get_uniform_location("tex[3]"), 3);
+
+		} else
+		{
+			// Bind texture
+			renderer::bind(textures[meshName], 0);
+
+			// Set tex uniform
+			glUniform1i(effects[meshName].get_uniform_location("tex"), 0);
+		}
 
 		// Set eye position - Get this from active camera
 		glUniform3fv(
-			eff.get_uniform_location("eye_pos"),
+			effects[meshName].get_uniform_location("eye_pos"),
 			1,
 			value_ptr(freeCam.get_position())
 			);

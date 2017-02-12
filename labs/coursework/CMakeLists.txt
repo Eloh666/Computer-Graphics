@@ -35,7 +35,7 @@ include_directories(${enu_gfx_SOURCE_DIR}/src ${enu_graphics_framework_incs})
 
 #Grab practical folders
 SET(child "src")
-file(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.*.h res/shaders/*.frag res/shaders/*.vert res/shaders/*.geom res/shaders/*.comp)
+file(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.h res/shaders/*.frag res/shaders/*.vert res/shaders/*.geom res/shaders/*.comp)
 add_executable(coursework ${SOURCE_FILES})
 
 #dependencies
