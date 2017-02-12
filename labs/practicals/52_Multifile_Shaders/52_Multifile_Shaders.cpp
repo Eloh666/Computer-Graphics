@@ -187,6 +187,11 @@ bool load_content() {
 	spots[4].set_power(1.0f);
 	spots[4].set_direction(normalize(vec3(0, -1, 0)));
 
+	// Set lighting values
+	light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
+	light.set_direction(vec3(1.0f, 1.0f, -1.0f));
+	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
 
 	// Load in shaders
 	eff.add_shader("52_Multifile_Shaders/shader.vert", GL_VERTEX_SHADER);
@@ -255,6 +260,8 @@ bool render() {
 
 		// Bind material
 		renderer::bind(materials[e.first], "mat");
+
+		renderer::bind(light, "light");
 
 		// Bind point lights
 		renderer::bind(spots, "spots");

@@ -90,7 +90,7 @@ void main() {
 
   // Sum point lights
   for(int i = 0; i < points.length(); i++){
-	colour += calculate_point(points[i], mat, position, normal, view_dir, tex_colour);
+	//colour += calculate_point(points[i], mat, position, normal, view_dir, tex_colour);
   }
 
   // Sum spot lights

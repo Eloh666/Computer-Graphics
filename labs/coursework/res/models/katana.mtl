@@ -1,0 +1,50 @@
+# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
+# File Created: 19.07.2010 21:29:34
+
+newmtl Transition
+	Ns 10.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5882 0.4157 0.0863
+	Kd 0.5882 0.4157 0.0863
+	Ks 0.0900 0.0900 0.0900
+	Ke 0.0000 0.0000 0.0000
+	map_Ka C:\Users\Guus\Desktop\Katana_Diffuse_1024.tga
+	map_Kd C:\Users\Guus\Desktop\Katana_Diffuse_1024.tga
+	map_bump C:\Users\Guus\Desktop\Katana_Bump_1024.tga
+	bump C:\Users\Guus\Desktop\Katana_Bump_1024.tga
+
+newmtl Blade
+	Ns 4.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.5882 0.5882 0.5882
+	Kd 0.7255 0.7255 0.7255
+	Ks 0.7380 0.7380 0.7380
+	Ke 0.0725 0.0725 0.0725
+	map_Ka C:\Users\Guus\Desktop\Katana_Diffuse_1024.tga
+	map_Kd C:\Users\Guus\Desktop\Katana_Diffuse_1024.tga
+	map_bump C:\Users\Guus\Desktop\Katana_Bump_1024.tga
+	bump C:\Users\Guus\Desktop\Katana_Bump_1024.tga
+
+newmtl Handle
+	Ns 28.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 0.0000 0.0000 0.0000
+	Kd 0.0000 0.0000 0.0000
+	Ks 0.2700 0.2700 0.2700
+	Ke 0.0000 0.0000 0.0000
+	map_Ka C:\Users\Guus\Desktop\Katana_Diffuse_1024.tga
+	map_Kd C:\Users\Guus\Desktop\Katana_Diffuse_1024.tga
+	map_bump C:\Users\Guus\Desktop\Katana_Bump_1024.tga
+	bump C:\Users\Guus\Desktop\Katana_Bump_1024.tga

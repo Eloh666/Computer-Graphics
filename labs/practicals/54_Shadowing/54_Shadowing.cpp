@@ -189,7 +189,7 @@ bool render() {
 		);
 
     // Bind shadow map texture - use texture unit 1
-	renderer::bind(shadow_eff, 1);
+	renderer::bind(shadow.buffer->get_depth(), 1);
 
     // Render mesh
 	renderer::render(m);

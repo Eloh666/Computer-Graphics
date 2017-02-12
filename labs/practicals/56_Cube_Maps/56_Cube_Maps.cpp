@@ -11,19 +11,20 @@ cubemap cube_map;
 target_camera cam;
 
 bool load_content() {
-  // Create a sphere
+  // Create a spheres
   sphere = mesh(geometry_builder::create_sphere(25, 25));
 
   array<string, 6> filenames = {"textures/sahara_ft.jpg", "textures/sahara_bk.jpg", "textures/sahara_up.jpg",
                                 "textures/sahara_dn.jpg", "textures/sahara_rt.jpg", "textures/sahara_lf.jpg"};
   // *********************************
   // Create cube_map
-
+  cube_map = cubemap(filenames);
   // Load in shaders
-
+  eff.add_shader("56_Cube_Maps/shader.vert", GL_VERTEX_SHADER);
+  eff.add_shader("56_Cube_Maps/shader.frag", GL_FRAGMENT_SHADER);
 
   // Build effect
-
+  eff.build();
   // *********************************
 
   // Set camera properties
