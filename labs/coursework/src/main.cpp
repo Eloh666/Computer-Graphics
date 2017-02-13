@@ -54,7 +54,7 @@ bool load_content() {
 	meshes["waterBase"] = mesh(geometry_builder::create_plane());
 	meshes["waterBase"].get_transform().translate(meshes["terrain"].get_transform().position + vec3(0, 5, 0));
 	meshes["waterBase"].get_transform().scale += vec3(100, 100, 100);
-	meshes["waterBase"].get_material().set_shininess(15);;
+	meshes["waterBase"].get_material().set_shininess(5);;
 	textures["waterBase"] = texture("textures/water.jpg");
 	normal_maps["waterBase"] = texture("textures/waterNormal.jpg");
 	effects["waterBase"] = createNormalMapEffect();
@@ -79,15 +79,10 @@ bool load_content() {
 	meshes["katana"] = createKatanaMesh();
 	textures["katana"] = texture("textures/katDiffuse.tga");
 	normal_maps["katana"] = texture("textures/katBump.tga");
-	effects["katana"] = createKatanaEffect();
-
-	// Generates the katana and loads its textures
-	//meshes["cherryTree"] = createcCherryTreeMesh();
-	textures["cherryTree"] = texture("textures/treeD.tga");
-	effects["cherryTree"] = createCherryTreeEffect();
+	effects["katana"] = createNormalMapEffect();
 
 	// Set lighting values
-	light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
+	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
 	light.set_direction(vec3(1.0f, 1.0f, -1.0f));
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
@@ -223,7 +218,7 @@ void renderMesh(mesh &m, string meshName)
 	// Bind env light
 	renderer::bind(light, "light");
 
-	if (meshName == "waterBase")
+	if (meshName == "waterBase" || meshName == "katana")
 	{
 		renderer::bind(normal_maps["waterBase"], 1);
 	}

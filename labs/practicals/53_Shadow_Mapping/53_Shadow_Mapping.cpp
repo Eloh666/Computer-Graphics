@@ -84,12 +84,14 @@ bool update(float delta_time) {
   // *********************************
   // Update the shadow map properties from the spot light
 
+  shadow.light_position = spot.get_position();
+  shadow.light_dir = spot.get_direction();
 
   // *********************************
 
   // Press s to save
   if (glfwGetKey(renderer::get_window(), 'S') == GLFW_PRESS) {
-    shadow.buffer->save("test.png");
+    shadow.buffer->save("test123.png");
   }
 
   cam.update(delta_time);
@@ -117,7 +119,7 @@ bool render() {
     auto M = m.get_transform().get_transform_matrix();
     // *********************************
     // View matrix taken from shadow map
-
+	auto V = shadow.get_view();
     // *********************************
 
     auto P = cam.get_projection();
@@ -130,9 +132,9 @@ bool render() {
 
   // *********************************
   // Set render target back to the screen
-
+  renderer::set_render_target();
   // Set cull face to back
-
+  glCullFace(GL_BACK);
   // *********************************
 
   return true;

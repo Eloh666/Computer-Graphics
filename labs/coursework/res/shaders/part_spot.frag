@@ -34,8 +34,8 @@ vec4 calculate_spot(in spot_light spot, in material mat, in vec3 position, in ve
 	// Calculate distance to light
     float dist = distance(spot.position, position);
 	// Calculate attenuation value
-    float divider = pow( max(dot(-1 * spot.direction, light_dir), 0), spot.power);
-    float attenuation = divider / ( spot.constant + (dist * spot.linear) + (pow(dist, 2) * spot.quadratic) );
+    float divider = pow( max(dot(-1.0 * spot.direction, light_dir), 0.0), spot.power);
+    float attenuation = divider / ( spot.constant + (dist * spot.linear) + (pow(dist, 2.0) * spot.quadratic) );
 	// Calculate spot light intensity
 
 	// Calculate light colour
