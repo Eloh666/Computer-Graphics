@@ -11,11 +11,6 @@ layout (location = 0) out vec3 tex_coord;
 
 void main()
 {
-	// Calculate screen space position
 	gl_Position = MVP * vec4(position, 1.0);
-
-	// *******************************
-	// Set outgoing texture coordinate
-	// *******************************
 	tex_coord = position;
 }

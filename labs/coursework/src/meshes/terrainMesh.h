@@ -7,11 +7,9 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createTerrainMesh(unsigned int width, unsigned int depth, float height_scale) {
+mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale) {
 
 	geometry geom;
-	// Load height map
-	const texture height_map("textures/islandHMap.jpg");
 
 	// Contains our position data
 	vector<vec3> positions;
@@ -123,10 +121,12 @@ mesh createTerrainMesh(unsigned int width, unsigned int depth, float height_scal
 	for (unsigned int x = 0; x < height_map.get_width(); ++x) {
 		for (unsigned int z = 0; z < height_map.get_height(); ++z) {
 			// Calculate tex weight
-			vec4 tex_weight(clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.0f) / 0.05f, 0.0f, 1.0f),
-				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.15f) / 0.15f, 0.0f, 1.0f),
-				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.5f) / 0.8f, 0.0f, 1.0f),
-				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.9f) / 0.1f, 0.0f, 1.0f));
+			vec4 tex_weight(
+				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.0f) / 0.25f, 0.0f, 1.0f),
+				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.15f) / 0.25f, 0.0f, 1.0f),
+				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.5f) / 0.25f, 0.0f, 1.0f),
+				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.9f) / 0.25f, 0.0f, 1.0f)
+);
 
 			// *********************************
 			// Sum the components of the vector
@@ -150,7 +150,8 @@ mesh createTerrainMesh(unsigned int width, unsigned int depth, float height_scal
 	delete[] data;
 
 	auto terrainMesh = mesh(geom);
-	terrainMesh.get_material().set_shininess(100.0f);
+
+	terrainMesh.get_material().set_shininess(5000);
 
 	return terrainMesh;
 }

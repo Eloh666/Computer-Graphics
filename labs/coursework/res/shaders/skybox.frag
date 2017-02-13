@@ -11,8 +11,5 @@ layout (location = 0) out vec4 colour;
 
 void main()
 {
-	// ************************
-	// Sample texture as normal
-	// ************************
 	colour = texture(cubemap, tex_coord);
 }

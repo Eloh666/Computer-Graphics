@@ -59,6 +59,5 @@ mesh createSkybox()
 	geometry geom;
 	geom.add_buffer(gePositions(), BUFFER_INDEXES::POSITION_BUFFER);
 	auto skybox = mesh(geom);
-	skybox.get_transform().scale = vec3(100, 100, 100);
 	return skybox;
 }
