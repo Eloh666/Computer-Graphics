@@ -82,7 +82,7 @@ void main() {
   vec4 primary = mat.emissive + diffuse;
   // Calculate final colour - remember alpha
   colour = primary * texColor + specular;
-  colour[3] = 1.0f;
+  colour[3] = 1.0;
 
   // *********************************
 }

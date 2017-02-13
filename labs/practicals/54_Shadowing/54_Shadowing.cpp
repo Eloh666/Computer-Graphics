@@ -23,9 +23,6 @@ bool load_content() {
   
   // Create "teapot" mesh by loading in models/teapot.obj
   meshes["teapot"] = mesh(geometry("models/teapot.obj"));
-  
-  // Need to rotate the teapot on x by negative pi/2
-  meshes["teapot"].get_transform().rotate(vec3(-half_pi<float>(), 0.0f, 0.0f));
 
   // Scale the teapot - (0.1, 0.1, 0.1)
   meshes["teapot"].get_transform().scale = vec3(0.1, 0.1, 0.1);
@@ -56,10 +53,10 @@ bool load_content() {
   // Pos (20, 30, 0), White
   // Direction (-1, -1, 0) normalized
   // 50 range, 10 power
-  spot.set_position(vec3(20.0f, 30.0f, 0.0f));
+  spot.set_position(vec3(30.0f, 30.0f, 0.0f));
   spot.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   spot.set_direction(normalize(vec3(-1.0f, -1.0f, 0.0f)));
-  spot.set_range(50.0f);
+  spot.set_range(500.0f);
   spot.set_power(10.0f);
 
   // Load in shaders
