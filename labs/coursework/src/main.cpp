@@ -14,6 +14,7 @@
 #include "meshes/lampMesh.h"
 #include "meshes/graveMesh.h"
 #include "meshes/statueMesh.h"
+#include "meshes/waterMesh.h"
 
 
 using namespace std;
@@ -55,10 +56,7 @@ bool load_content() {
 
 
 	// Generates water and loads its textures
-	meshes["waterBase"] = mesh(geometry_builder::create_plane());
-	meshes["waterBase"].get_transform().translate(meshes["terrain"].get_transform().position + vec3(0, 5, 0));
-	meshes["waterBase"].get_transform().scale += vec3(100, 100, 100);
-	meshes["waterBase"].get_material().set_shininess(25);;
+	meshes["waterBase"] = createWaterMesh();
 	textures["waterBase"] = texture("textures/water2.jpg");
 	//normal_maps["waterBase"] = texture("textures/waterNormal.png");
 	effects["waterBase"] = createNormalMapEffect();

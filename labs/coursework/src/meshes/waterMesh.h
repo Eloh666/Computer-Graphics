@@ -1,3 +1,4 @@
+
 #include <glm\glm.hpp>
 #include <graphics_framework.h>
 
@@ -7,59 +8,12 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-vector<vec3> gePositions()
+mesh createWaterMesh()
 {
-	return{
-		vec3(-1.0f, 1.0f, -1.0f),
-		vec3(-1.0f, -1.0f, -1.0f),
-		vec3(1.0f, -1.0f, -1.0f),
-		vec3(1.0f, -1.0f, -1.0f),
-		vec3(1.0f, 1.0f, -1.0f),
-		vec3(-1.0f, 1.0f, -1.0f),
+	auto waterMesh = mesh(geometry_builder::create_plane());
+	waterMesh.get_transform().translate(waterMesh.get_transform().position + vec3(0, 5, 0));
+	waterMesh.get_transform().scale += vec3(100, 100, 100);
+	waterMesh.get_material().set_shininess(25);
 
-		vec3(-1.0f, -1.0f, 1.0f),
-		vec3(-1.0f, -1.0f, -10.0),
-		vec3(-1.0f, 1.0f, -1.0f),
-		vec3(-1.0f, 1.0f, -1.0f),
-		vec3(-1.0f, 1.0f, 1.0f),
-		vec3(-1.0f, -1.0f, 1.0f),
-
-		vec3(1.0f, -1.0f, -1.0f),
-		vec3(1.0f, -1.0f, 1.0f),
-		vec3(1.0f, 1.0f, 1.0f),
-		vec3(1.0f, 1.0f, 1.0f),
-		vec3(1.0f, 1.0f, -1.0f),
-		vec3(1.0f, -1.0f, -1.0f),
-
-		vec3(-1.0f, -1.0f, 1.0f),
-		vec3(-1.0f, 1.0f, 1.0f),
-		vec3(1.0f, 1.0f, 1.0f),
-		vec3(1.0f, 1.0f, 1.0f),
-		vec3(1.0f, -1.0f, 1.0f),
-		vec3(-1.0f, -1.0f, 1.0f),
-
-		vec3(-1.0f, 1.0f, -1.0f),
-		vec3(1.0f, 1.0f, -1.0f),
-		vec3(1.0f, 1.0f, 1.0f),
-		vec3(1.0f, 1.0f, 1.0f),
-		vec3(-1.0f, 1.0f, 1.0f),
-		vec3(-1.0f, 1.0f, -1.0f),
-
-		vec3(-1.0f, -1.0f, -1.0f),
-		vec3(-1.0f, -1.0f, 1.0f),
-		vec3(1.0f, -1.0f, -1.0f),
-		vec3(1.0f, -1.0f, -1.0f),
-		vec3(-1.0f, -1.0f, 1.0f),
-		vec3(1.0f, -1.0f, 1.0f)
-	};
-}
-
-mesh createSkybox()
-{
-	geometry geom;
-	geom.add_buffer(gePositions(), BUFFER_INDEXES::POSITION_BUFFER);
-	auto skybox = mesh(geom);
-	skybox.get_transform().scale = vec3(500, 500, 500);
-	skybox.get_transform().translate(skybox.get_transform().position + vec3(0, 350, 0));
-	return skybox;
+	return waterMesh;
 }
