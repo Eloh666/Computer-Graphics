@@ -60,7 +60,7 @@ vec3 calc_normal(in vec3 normal, in vec3 tangent, in vec3 binormal, in sampler2D
 // Direction light being used in the scene
 uniform directional_light light;
 // Point lights being used in the scene
-uniform point_light points[4];
+uniform point_light points[5];
 // Spot lights being used in the scene
 uniform spot_light spots[5];
 // Material of the object being rendered
@@ -96,7 +96,7 @@ void main() {
   vec3 normalMap = calc_normal(normal, tangent, binormal, normal_map, tex_coord);
   // Calculate directional light
 
-  colour = calculate_direction(light, mat, normalMap, view_dir, tex_colour);
+  colour += calculate_direction(light, mat, normalMap, view_dir, tex_colour);
 
   for(int i = 0; i < points.length(); i++){
 	colour += calculate_point(points[i], mat, position, normalMap, view_dir, tex_colour);

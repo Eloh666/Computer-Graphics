@@ -3,14 +3,17 @@
 #include "meshes/katanaMesh.h"
 #include "meshes/terrainMesh.h"
 #include "effects/terrainEff.h"
-#include "effects/katanaEff.h"
 #include "meshes/skyboxMesh.h"
 #include "effects/skyboxEff.h"
 #include "meshes/grassMesh.h"
-#include "effects/grassEff.h"
 #include "effects/normalMapEff.h"
-#include "effects/treeEff.h"
 #include "meshes/treeMesh.h"
+#include "effects/multiLightEff.h"
+#include "meshes/moonMesh.h"
+#include "meshes/boatMesh.h"
+#include "meshes/lampMesh.h"
+#include "meshes/graveMesh.h"
+#include "meshes/statueMesh.h"
 
 
 using namespace std;
@@ -20,7 +23,7 @@ using namespace glm;
 
 target_camera staticCam;
 directional_light light;
-vector<point_light> points(4);
+vector<point_light> points(5);
 vector<spot_light> spots(5);
 free_camera freeCam;
 
@@ -32,6 +35,7 @@ cubemap cube_map;
 map<string, mesh> meshes;
 map<string, texture> textures;
 map<string, texture> normal_maps;
+map<string, texture> alpha_maps;
 map<string, effect> effects;
 
 bool load_content() {
@@ -54,39 +58,93 @@ bool load_content() {
 	meshes["waterBase"] = mesh(geometry_builder::create_plane());
 	meshes["waterBase"].get_transform().translate(meshes["terrain"].get_transform().position + vec3(0, 5, 0));
 	meshes["waterBase"].get_transform().scale += vec3(100, 100, 100);
-	meshes["waterBase"].get_material().set_shininess(5);;
-	textures["waterBase"] = texture("textures/water.jpg");
-	normal_maps["waterBase"] = texture("textures/waterNormal.jpg");
+	meshes["waterBase"].get_material().set_shininess(25);;
+	textures["waterBase"] = texture("textures/water2.jpg");
+	//normal_maps["waterBase"] = texture("textures/waterNormal.png");
 	effects["waterBase"] = createNormalMapEffect();
 
-	// Generates the night skybox
+	// Generates the night skyboxs
 	skybox = createSkybox();
 	array<string, 6> filenames = { "textures/skybox/purplenebula_ft.tga", "textures/skybox/purplenebula_bk.tga", "textures/skybox/purplenebula_up.tga",
 		"textures/skybox/purplenebula_dn.tga", "textures/skybox/purplenebula_rt.tga", "textures/skybox/purplenebula_lf.tga" };
 	cube_map = cubemap(filenames);
 	skyboxEffect = createSkyboxEffect();
 
-	skybox.get_transform().scale = vec3(500, 500, 500);
+	skybox.get_transform().scale = vec3(600, 600, 600);
 	skybox.get_transform().translate(meshes["terrain"].get_transform().position + vec3(0, 0, 0));
 
-	// Generates grass
-	//grass = createGrassMesh();
-	textures["grass"] = texture("textures/grass.jpg");
-	effects["grass"] = createGrassEffect();
+	// Generates lamp
+	meshes["lamp"] = createLampMesh();
+	textures["lamp"] = texture("textures/lampDiff.png");
+	//normal_maps["lamp"] = texture("textures/lampNorm.png");
+	effects["lamp"] = createMultiLightEffect();
 
+	// Generates the moon and loads its textures
+	meshes["moon"] = createMoonMesh();
+	textures["moon"] = texture("textures/moonTex.jpg");
+	effects["moon"] = createMultiLightEffect();
+
+	// Generates the boat and loads its textures
+	meshes["boat"] = createBoatMesh();
+	textures["boat"] = texture("textures/boatTex.png");
+	effects["boat"] = createMultiLightEffect();
+
+	// Generates the grave and loads its textures
+	meshes["grave"] = createGraveMesh();
+	textures["grave"] = texture("textures/grave.png");
+	effects["grave"] = createMultiLightEffect();
+
+	// Generates the statue and loads its textures
+	meshes["statue"] = createStatueMesh();
+	textures["statue"] = texture("textures/buddha.jpg");
+	//normal_maps["statue"] = texture("textures/buddhaN.jpg");
+	effects["statue"] = createMultiLightEffect();
 
 	// Generates the katana and loads its textures
 	meshes["katana"] = createKatanaMesh();
 	textures["katana"] = texture("textures/katDiffuse.tga");
-	normal_maps["katana"] = texture("textures/katBump.tga");
-	effects["katana"] = createNormalMapEffect();
+	//normal_maps["katana"] = texture("textures/katBump.tga");
+	effects["katana"] = createMultiLightEffect();
+
+	// Generates the tree and loads its textures
+	//meshes["tree"] = createTree();
+	textures["tree"] = texture("textures/treeTex.tga");
+	alpha_maps["tree"] = texture("textures/treeAlpha.tga");
+	//normal_maps["tree"] = texture("textures/treeNorm.tga");
+	effects["tree"] = createMultiLightEffect();
 
 	// Set lighting values
 	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
-	light.set_direction(vec3(1.0f, 1.0f, -1.0f));
+	light.set_direction(normalize(meshes["katana"].get_transform().position));
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
+	//points[0].set_position(vec3(37, 43.5, 0));
+	points[0].set_position(vec3(158, 11.5, -105));
+	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
+	points[0].set_range(50);
 
+	points[1].set_position(vec3(280, 315, 240));
+	points[1].set_light_colour(vec4(1, 1, 1, 1));
+	points[1].set_range(500);
+
+	points[2].set_position(vec3(40, 45, 4.3));
+	points[2].set_light_colour(vec4(1, 0.6, 0, 1));
+	points[2].set_range(15);
+
+	points[3].set_position(vec3(38, 45, 4.3));
+	points[3].set_light_colour(vec4(1, 0.6, 0, 1));
+	points[3].set_range(15);
+
+	points[4].set_position(vec3(36, 45, 4.3));
+	points[4].set_light_colour(vec4(1, 0.6, 0, 1));
+	points[4].set_range(15);
+
+
+	//spots[0].set_position(meshes["moon"].get_transform().position);
+	//spots[0].set_light_colour(vec4(1, 1, 1, 1));
+	//spots[0].set_range(1000);
+	//spots[0].set_power(1000.0f);
+	//spots[0].set_direction(meshes["katana"].get_transform().position);
 
 	// Set camera properties
 	freeCam.set_position(vec3(40, 50, -10));
@@ -118,25 +176,16 @@ bool update(float delta_time) {
 	// Use keyboard to move the camera - WASD
 	vec3 translation(0.0f, 0.0f, 0.0f);
 	if (glfwGetKey(renderer::get_window(), 'W')) {
-		translation.z += 5.0f * delta_time;
+		translation.z += 50.0f * delta_time;
 	}
 	if (glfwGetKey(renderer::get_window(), 'S')) {
-		translation.z -= 5.0f * delta_time;
+		translation.z -= 50.0f * delta_time;
 	}
 	if (glfwGetKey(renderer::get_window(), 'A')) {
-		translation.x -= 5.0f * delta_time;
+		translation.x -= 50.0f * delta_time;
 	}
 	if (glfwGetKey(renderer::get_window(), 'D')) {
-		translation.x += 5.0f * delta_time;
-	}
-	if (glfwGetKey(renderer::get_window(), '1')) {
-		meshes["katana"].get_transform().rotate(vec3(half_pi<float>() * delta_time, 0.0f, 0.0f));
-	}
-	if (glfwGetKey(renderer::get_window(), '2')) {
-		meshes["katana"].get_transform().rotate(vec3(0.0f, half_pi<float>() * delta_time, half_pi<float>()));
-	}
-	if (glfwGetKey(renderer::get_window(), '3')) {
-		meshes["katana"].get_transform().rotate(vec3(0.0f, 0.0f, half_pi<float>() * delta_time));
+		translation.x += 50.0f * delta_time;
 	}
 	// Move camera
 	freeCam.move(translation);
@@ -218,11 +267,17 @@ void renderMesh(mesh &m, string meshName)
 	// Bind env light
 	renderer::bind(light, "light");
 
-	if (meshName == "waterBase" || meshName == "katana")
+	if (normal_maps.count(meshName) != 0 )
 	{
-		renderer::bind(normal_maps["waterBase"], 1);
+		cout << meshName << endl;
+		renderer::bind(normal_maps[meshName], 1);
+		glUniform1i(effects[meshName].get_uniform_location("normal_map"), 1);
 	}
-
+	if (meshName == "tree")
+	{
+		renderer::bind(alpha_maps["tree"], 1);
+		glUniform1i(effects[meshName].get_uniform_location("blendMap"), 1);
+	}
 	if (meshName == "terrain")
 	{
 		// Bind Tex[0] to TU 0, set uniform
@@ -266,15 +321,9 @@ void renderMesh(mesh &m, string meshName)
 	renderer::render(m);
 }
 
-void renderGrass()
-{
-
-}
-
 bool render() {
 	// Render skybox
 	renderSkybox();
-	renderGrass();
 
 	// Render meshes
 	for (auto &e : meshes) {

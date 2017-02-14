@@ -53,10 +53,10 @@ bool load_content() {
   // Pos (20, 30, 0), White
   // Direction (-1, -1, 0) normalized
   // 50 range, 10 power
-  spot.set_position(vec3(30.0f, 30.0f, 0.0f));
+  spot.set_position(vec3(20, 30, 0));
   spot.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   spot.set_direction(normalize(vec3(-1.0f, -1.0f, 0.0f)));
-  spot.set_range(500.0f);
+  spot.set_range(50.0f);
   spot.set_power(10.0f);
 
   // Load in shaders
@@ -80,7 +80,7 @@ bool load_content() {
 
 bool update(float delta_time) {
   // Rotate the teapot
-  meshes["teapot"].get_transform().rotate(vec3(0.0f, 0.0f, half_pi<float>()) * delta_time);
+  meshes["teapot"].get_transform().rotate(vec3(0.0f, half_pi<float>(), 0.0f) * delta_time);
 
   // *********************************
   // Update the shadow map properties from the spot light
@@ -187,6 +187,7 @@ bool render() {
 
     // Bind shadow map texture - use texture unit 1
 	renderer::bind(shadow.buffer->get_depth(), 1);
+	glUniform1i(main_eff.get_uniform_location("shadow_map"), 1);
 
     // Render mesh
 	renderer::render(m);
