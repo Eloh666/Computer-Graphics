@@ -56,7 +56,7 @@ vec4 calculate_point(in point_light point, in material mat, in vec3 position, in
                      in vec4 tex_colour);
 vec4 calculate_spot(in spot_light spot, in material mat, in vec3 position, in vec3 normal, in vec3 view_dir,
                     in vec4 tex_colour);
-vec4 removeAlpha(in sampler2D tex, in sampler2D blendMap);
+vec4 removeAlpha(in vec4 tex_colour, in sampler2D blendMap, in vec2 tex_coord);
 
 // Directional light information
 uniform directional_light light;
@@ -86,14 +86,14 @@ layout(location = 2) in vec2 tex_coord;
 layout(location = 0) out vec4 colour;
 
 void main() {
-  // *********************************
+
    // Calculate view direction
   vec3 view_dir = normalize(eye_pos - position);
 
   // Sample texture
   vec4 tex_colour = texture(tex, tex_coord);
 
-  //colour = calculate_direction(light, mat, normal, view_dir, tex_colour);
+  colour += calculate_direction(light, mat, normal, view_dir, tex_colour);
 
   // Sum point lights
   for(int i = 0; i < points.length(); i++){
@@ -105,7 +105,6 @@ void main() {
 	colour += calculate_spot(spots[i], mat, position, normal, view_dir, tex_colour);
   }
 
-  colour = removeAlpha(tex_colour, blendMap);
+  colour += removeAlpha(tex_colour, blendMap, tex_coord);
 
-  // *********************************
 }

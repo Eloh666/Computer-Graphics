@@ -107,11 +107,11 @@ bool load_content() {
 	effects["katana"] = createMultiLightEffect();
 
 	// Generates the tree and loads its textures
-	//meshes["tree"] = createTree();
+	meshes["tree"] = createTree();
 	textures["tree"] = texture("textures/treeTex.tga");
 	alpha_maps["tree"] = texture("textures/treeAlpha.tga");
 	//normal_maps["tree"] = texture("textures/treeNorm.tga");
-	effects["tree"] = createMultiLightEffect();
+	effects["tree"] = createMultiLightRemoveAlphaEffect();
 
 	// Set lighting values
 	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
@@ -269,14 +269,17 @@ void renderMesh(mesh &m, string meshName)
 
 	if (normal_maps.count(meshName) != 0 )
 	{
-		cout << meshName << endl;
 		renderer::bind(normal_maps[meshName], 1);
 		glUniform1i(effects[meshName].get_uniform_location("normal_map"), 1);
 	}
-	if (meshName == "tree")
+	if (alpha_maps.count(meshName) != 0)
 	{
-		renderer::bind(alpha_maps["tree"], 1);
+		glDisable(GL_CULL_FACE);
+		renderer::bind(alpha_maps[meshName], 1);
 		glUniform1i(effects[meshName].get_uniform_location("blendMap"), 1);
+	} else
+	{
+		glEnable(GL_CULL_FACE);
 	}
 	if (meshName == "terrain")
 	{

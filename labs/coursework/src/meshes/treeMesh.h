@@ -10,7 +10,7 @@ using namespace glm;
 mesh createTree()
 {
 	auto tree = mesh(geometry("models/tree.obj"));
-	tree.get_transform().scale = vec3(2, 2, 2);
+	tree.get_transform().scale = vec3(0.75, 0.75, 0.75);
 	tree.get_transform().translate(vec3(20, 47, 23));
 	//tree.get_transform().rotate(vec3(half_pi<float>(), 0.0f, half_pi<float>()));
 	tree.get_material().set_emissive(vec4(0.01f, 0.01f, 0.01f, 0.1f));
