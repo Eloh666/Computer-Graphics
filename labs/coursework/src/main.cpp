@@ -50,7 +50,7 @@ bool load_content() {
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
 	textures["water"] = texture("textures/sand.jpg", false, true);
-	textures["terrainSand"] = texture("textures/sand.jpg", false, true);
+	textures["terrainSand"] = texture("textures/sgrass.jpg", false, true);
 	textures["terrainGrass"] = texture("textures/turf-grass.jpg", false, true);
 	textures["rock"] = texture("textures/grass.jpg", false, true);
 	
@@ -59,7 +59,7 @@ bool load_content() {
 
 	// Generates water and loads its textures
 	meshes["waterBase"] = createWaterMesh();
-	textures["waterBase"] = texture("textures/water2.jpg", false, true);
+	textures["waterBase"] = texture("textures/water.jpg", false, true);
 	normal_maps["waterBase"] = texture("textures/watNorm.png", false, true);
 	//effects["waterBase"] = createNormalMapEffect();
 	effects["waterBase"] = createTerrainEffect();
@@ -108,11 +108,11 @@ bool load_content() {
 	effects["katana"] = createMultiLightEffect();
 
 	// Generates the tree and loads its textures
-	meshes["tree"] = createTree();
-	textures["tree"] = texture("textures/treeTex.tga", false, true);
-	alpha_maps["tree"] = texture("textures/treeAlpha.tga", false, true);
+	//meshes["tree"] = createTree();
+	//textures["tree"] = texture("textures/palm.tga", false, true);
+	//alpha_maps["tree"] = texture("textures/palmA.jpeg", false, true);
 	//normal_maps["tree"] = texture("textures/treeNorm.tga");
-	effects["tree"] = createMultiLightRemoveAlphaEffect();
+	//effects["tree"] = createMultiLightEffect();
 
 	// Set lighting values
 	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
@@ -120,9 +120,9 @@ bool load_content() {
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	//points[0].set_position(vec3(37, 43.5, 0));
-	points[0].set_position(vec3(158, 29, -105));
+	points[0].set_position(vec3(158, 29, -90));
 	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
-	points[0].set_range(60);
+	points[0].set_range(75);
 
 	//points[1].set_position(meshes["moon"].get_transform().position);
 	//points[1].set_light_colour(vec4(1, 1, 1, 1));
