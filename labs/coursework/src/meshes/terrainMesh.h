@@ -122,8 +122,8 @@ mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned i
 		for (unsigned int z = 0; z < height_map.get_height(); ++z) {
 			// Calculate tex weight
 			vec4 tex_weight(
-				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.0f) / 0.25f, 0.0f, 1.0f),
-				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.15f) / 0.25f, 0.0f, 1.0f),
+				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.0f) / 0.05f, 0.0f, 1.0f),
+				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.15f) / 0.45f, 0.0f, 1.0f),
 				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.5f) / 0.25f, 0.0f, 1.0f),
 				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.9f) / 0.25f, 0.0f, 1.0f)
 );
@@ -150,8 +150,5 @@ mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned i
 	delete[] data;
 
 	auto terrainMesh = mesh(geom);
-
-	terrainMesh.get_material().set_shininess(5000);
-
 	return terrainMesh;
 }

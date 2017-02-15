@@ -10,10 +10,16 @@ using namespace glm;
 
 mesh createWaterMesh()
 {
-	auto waterMesh = mesh(geometry_builder::create_plane());
-	waterMesh.get_transform().translate(waterMesh.get_transform().position + vec3(0, 5, 0));
+
+	const texture height_map("textures/waterHM.jpg");
+	auto waterMesh = createTerrainMesh(height_map, 20, 20, 1.2);
+	waterMesh.get_transform().translate(vec3(0, -60, 0));
 	waterMesh.get_transform().scale += vec3(100, 100, 100);
-	waterMesh.get_material().set_shininess(25);
+	waterMesh.get_material().set_shininess(10);
+
+	waterMesh.get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	waterMesh.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	waterMesh.get_material().set_shininess(25.0f);
 
 	return waterMesh;
 }

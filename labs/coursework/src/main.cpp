@@ -47,83 +47,86 @@ bool load_content() {
 	auto heightScale = 3.0f;
 	const texture height_map("textures/islandHMap.jpg");
 	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale);
+	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
-	textures["water"] = texture("textures/sand.jpg");
-	textures["terrainSand"] = texture("textures/turf-grass.jpg");
-	textures["terrainGrass"] = texture("textures/grass.jpg");
-	textures["rock"] = texture("textures/rock.jpg");
+	textures["water"] = texture("textures/sand.jpg", false, true);
+	textures["terrainSand"] = texture("textures/sand.jpg", false, true);
+	textures["terrainGrass"] = texture("textures/turf-grass.jpg", false, true);
+	textures["rock"] = texture("textures/grass.jpg", false, true);
+	
 	effects["terrain"] = createTerrainEffect();
 
 
 	// Generates water and loads its textures
 	meshes["waterBase"] = createWaterMesh();
-	textures["waterBase"] = texture("textures/water2.jpg");
-	//normal_maps["waterBase"] = texture("textures/waterNormal.png");
-	effects["waterBase"] = createNormalMapEffect();
+	textures["waterBase"] = texture("textures/water2.jpg", false, true);
+	normal_maps["waterBase"] = texture("textures/watNorm.png", false, true);
+	//effects["waterBase"] = createNormalMapEffect();
+	effects["waterBase"] = createTerrainEffect();
 
 	// Generates the night skyboxs
 	skybox = createSkybox();
-	array<string, 6> filenames = { "textures/skybox/purplenebula_ft.tga", "textures/skybox/purplenebula_bk.tga", "textures/skybox/purplenebula_up.tga",
-		"textures/skybox/purplenebula_dn.tga", "textures/skybox/purplenebula_rt.tga", "textures/skybox/purplenebula_lf.tga" };
+	array<string, 6> filenames = { "textures/skybox/starfield_ft.tga", "textures/skybox/starfield_bk.tga", "textures/skybox/starfield_up.tga",
+		"textures/skybox/starfield_dn.tga", "textures/skybox/starfield_rt.tga", "textures/skybox/starfield_lf.tga" };
 	cube_map = cubemap(filenames);
 	skyboxEffect = createSkyboxEffect();
 
-	skybox.get_transform().scale = vec3(600, 600, 600);
-	skybox.get_transform().translate(meshes["terrain"].get_transform().position + vec3(0, 0, 0));
+	skybox.get_transform().scale = vec3(1000, 1000, 1000);
+	//skybox.get_transform().translate(meshes["terrain"].get_transform().position + vec3(0, 0, 0));
 
-	// Generates lamp
+	// Generates lampw
 	meshes["lamp"] = createLampMesh();
-	textures["lamp"] = texture("textures/lampDiff.png");
+	textures["lamp"] = texture("textures/lampDiff.png", false, true);
 	//normal_maps["lamp"] = texture("textures/lampNorm.png");
 	effects["lamp"] = createMultiLightEffect();
 
 	// Generates the moon and loads its textures
 	meshes["moon"] = createMoonMesh();
-	textures["moon"] = texture("textures/moonTex.jpg");
+	textures["moon"] = texture("textures/moonTex.jpg", false, true);
 	effects["moon"] = createMultiLightEffect();
 
 	// Generates the boat and loads its textures
 	meshes["boat"] = createBoatMesh();
-	textures["boat"] = texture("textures/boatTex.png");
+	textures["boat"] = texture("textures/boatTex.png", false, true);
 	effects["boat"] = createMultiLightEffect();
 
 	// Generates the grave and loads its textures
 	meshes["grave"] = createGraveMesh();
-	textures["grave"] = texture("textures/grave.png");
+	textures["grave"] = texture("textures/grave.png", false, true);
 	effects["grave"] = createMultiLightEffect();
 
 	// Generates the statue and loads its textures
 	meshes["statue"] = createStatueMesh();
-	textures["statue"] = texture("textures/buddha.jpg");
+	textures["statue"] = texture("textures/buddha.jpg", false, true);
 	//normal_maps["statue"] = texture("textures/buddhaN.jpg");
 	effects["statue"] = createMultiLightEffect();
 
 	// Generates the katana and loads its textures
 	meshes["katana"] = createKatanaMesh();
-	textures["katana"] = texture("textures/katDiffuse.tga");
+	textures["katana"] = texture("textures/katDiffuse.tga", false, true);
 	//normal_maps["katana"] = texture("textures/katBump.tga");
 	effects["katana"] = createMultiLightEffect();
 
 	// Generates the tree and loads its textures
 	meshes["tree"] = createTree();
-	textures["tree"] = texture("textures/treeTex.tga");
-	alpha_maps["tree"] = texture("textures/treeAlpha.tga");
+	textures["tree"] = texture("textures/treeTex.tga", false, true);
+	alpha_maps["tree"] = texture("textures/treeAlpha.tga", false, true);
 	//normal_maps["tree"] = texture("textures/treeNorm.tga");
 	effects["tree"] = createMultiLightRemoveAlphaEffect();
 
 	// Set lighting values
 	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
-	light.set_direction(normalize(meshes["katana"].get_transform().position));
+	light.set_direction(normalize(meshes["boat"].get_transform().position));
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	//points[0].set_position(vec3(37, 43.5, 0));
-	points[0].set_position(vec3(158, 11.5, -105));
+	points[0].set_position(vec3(158, 29, -105));
 	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
-	points[0].set_range(50);
+	points[0].set_range(60);
 
-	points[1].set_position(vec3(280, 315, 240));
-	points[1].set_light_colour(vec4(1, 1, 1, 1));
-	points[1].set_range(500);
+	//points[1].set_position(meshes["moon"].get_transform().position);
+	//points[1].set_light_colour(vec4(1, 1, 1, 1));
+	//points[1].set_range(250);
 
 	points[2].set_position(vec3(40, 45, 4.3));
 	points[2].set_light_colour(vec4(1, 0.6, 0, 1));
@@ -138,16 +141,22 @@ bool load_content() {
 	points[4].set_range(15);
 
 
-	//spots[0].set_position(meshes["moon"].get_transform().position);
-	//spots[0].set_light_colour(vec4(1, 1, 1, 1));
-	//spots[0].set_range(1000);
-	//spots[0].set_power(1000.0f);
-	//spots[0].set_direction(meshes["katana"].get_transform().position);
+	spots[0].set_position(vec3(281, 324, 205));
+	spots[0].set_light_colour(vec4(1, 1, 1, 1));
+	spots[0].set_range(5);
+	spots[0].set_power(1.0f);
+	spots[0].set_direction(vec3(350, 362, 242));
+
+	spots[1].set_position(vec3(231, 274, 205));
+	spots[1].set_light_colour(vec4(1, 1, 1, 1));
+	spots[1].set_range(15);
+	spots[1].set_power(1.0f);
+	spots[1].set_direction(vec3(-400, 0, -400));
 
 	// Set camera properties
-	freeCam.set_position(vec3(40, 50, -10));
-	freeCam.set_target(vec3(40.0f, 40.0f, -5.0f));
-	freeCam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
+	freeCam.set_position(vec3(-100, 145, -500));
+	freeCam.set_target(normalize(meshes["katana"].get_transform().position));
+	freeCam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 3000.0f);
 	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	return true;
 }
@@ -185,6 +194,38 @@ bool update(float delta_time) {
 	if (glfwGetKey(renderer::get_window(), 'D')) {
 		translation.x += 50.0f * delta_time;
 	}
+	if (glfwGetKey(renderer::get_window(), '1')) {
+		spots[1].move(vec3(5.0f * delta_time, 0.0f, 0.0f));
+	}
+	if (glfwGetKey(renderer::get_window(), '2')) {
+		spots[1].move(vec3(-5.0f * delta_time, 0.0f, 0.0f));
+	}
+	if (glfwGetKey(renderer::get_window(), '3')) {
+		spots[1].move(vec3(0.0f, 5.0f * delta_time, 0.0f));
+	}
+	if (glfwGetKey(renderer::get_window(), '4')) {
+		spots[1].move(vec3(0.0f, -5.0f * delta_time, 0.0f));
+	}
+	if (glfwGetKey(renderer::get_window(), '5')) {
+		spots[1].move(vec3(0.0f, 0.0f, 5.0f * delta_time));
+	}
+	if (glfwGetKey(renderer::get_window(), '6')) {
+		spots[1].move(vec3(0.0f, 0.0f, -5.0f * delta_time));
+	}
+	if (glfwGetKey(renderer::get_window(), 'Q')) {
+		cout << spots[1].get_position().x << endl;
+		cout << spots[1].get_position().y << endl;
+		cout << spots[1].get_position().z << endl;
+	}
+	if (glfwGetKey(renderer::get_window(), 'M')) {
+		cout << freeCam.get_position().x << endl;
+		cout << freeCam.get_position().y << endl;
+		cout << freeCam.get_position().z << endl;
+	}
+	if (glfwGetKey(renderer::get_window(), 'N')) {
+		spots[1].set_position(freeCam.get_position());
+	}
+
 	// Move camera
 	freeCam.move(translation);
 	// Update the camera
@@ -193,9 +234,7 @@ bool update(float delta_time) {
 	cursor_x = current_x;
 	cursor_y = current_y;
 
-	cout << freeCam.get_position().x << endl;
-	cout << freeCam.get_position().y << endl;
-	cout << freeCam.get_position().z << endl;
+	
 
 	return true;
 }
