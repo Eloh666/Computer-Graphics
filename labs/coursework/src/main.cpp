@@ -104,7 +104,6 @@ bool load_content() {
 	// Generates the katana and loads its textures
 	meshes["katana"] = createKatanaMesh();
 	textures["katana"] = texture("textures/katDiffuse.tga", false, true);
-	//normal_maps["katana"] = texture("textures/katBump.tga");
 	effects["katana"] = createMultiLightEffect();
 
 	// Generates the tree and loads its textures
@@ -120,7 +119,7 @@ bool load_content() {
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	//points[0].set_position(vec3(37, 43.5, 0));
-	points[0].set_position(vec3(158, 29, -90));
+	points[0].set_position(vec3(158, 29, -85));
 	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
 	points[0].set_range(75);
 
