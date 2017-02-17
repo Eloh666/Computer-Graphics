@@ -51,18 +51,22 @@ bool load_content() {
 	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale);
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
-	textures["water"] = texture("textures/sand.jpg", false, true);
+	textures["terrainZero"] = texture("textures/sand.jpg", false, true);
 	textures["terrainSand"] = texture("textures/sgrass.jpg", false, true);
 	textures["terrainGrass"] = texture("textures/turf-grass.jpg", false, true);
-	textures["rock"] = texture("textures/grass.jpg", false, true);
+	textures["terrainRock"] = texture("textures/overgrownRocks.jpg", false, true);
+	normal_maps["terrainZero"] = texture("textures/terrainSand0.jpg", false, true);
+	normal_maps["terrainSand"] = texture("textures/terrainSandOne.jpg", false, true);
+	normal_maps["terrainGrass"] = texture("textures/terrainGrassNorm.png", false, true);
+	normal_maps["terrainRock"] = texture("textures/terrainRockNorm.jpg", false, true);
 	
 	effects["terrain"] = createTerrainEffect();
 
 
 	// Generates water and loads its textures
 	meshes["waterBase"] = createWaterMesh();
-	textures["waterBase"] = texture("textures/water.jpg", false, true);
-	normal_maps["waterBase"] = texture("textures/watNorm.png", false, true);
+	textures["waterBase"] = texture("textures/water2.jpg", false, true);
+	normal_maps["waterBase"] = texture("textures/waterNormal.jpg", false, true);
 	effects["waterBase"] = createNormalMapEffect();
 
 	// Generates the night skyboxs
@@ -77,7 +81,6 @@ bool load_content() {
 	// Generates lampw
 	meshes["lamp"] = createLampMesh();
 	textures["lamp"] = texture("textures/lampDiff.png", false, true);
-	//normal_maps["lamp"] = texture("textures/lampNorm.png");
 	effects["lamp"] = createMultiLightEffect();
 
 	// Generates the moon and loads its textures
@@ -98,7 +101,6 @@ bool load_content() {
 	// Generates the statue and loads its textures
 	meshes["statue"] = createStatueMesh();
 	textures["statue"] = texture("textures/buddha.jpg", false, true);
-	//normal_maps["statue"] = texture("textures/buddhaN.jpg");
 	effects["statue"] = createMultiLightEffect();
 
 	// Generates the katana and loads its textures
@@ -111,14 +113,13 @@ bool load_content() {
 	light.set_direction(normalize(meshes["boat"].get_transform().position));
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-	//points[0].set_position(vec3(37, 43.5, 0));
 	points[0].set_position(vec3(131, 24, -90));
 	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
 	points[0].set_range(75);
 
-	//points[1].set_position(meshes["moon"].get_transform().position);
-	//points[1].set_light_colour(vec4(1, 1, 1, 1));
-	//points[1].set_range(250);
+	points[1].set_position(meshes["moon"].get_transform().position);
+	points[1].set_light_colour(vec4(1, 1, 1, 1));
+	points[1].set_range(250);
 
 	points[2].set_position(vec3(40, 45, 4.3));
 	points[2].set_light_colour(vec4(1, 0.6, 0, 1));
@@ -317,7 +318,7 @@ void renderMesh(mesh &m, string meshName)
 	if (meshName == "terrain")
 	{
 		// Bind Tex[0] to TU 0, set uniform
-		renderer::bind(textures["water"], 0);
+		renderer::bind(textures["terrainZero"], 0);
 		glUniform1i(effects[meshName].get_uniform_location("tex[0]"), 0);
 		// *********************************
 		//Bind Tex[1] to TU 1, set uniform
@@ -329,8 +330,24 @@ void renderMesh(mesh &m, string meshName)
 		glUniform1i(effects[meshName].get_uniform_location("tex[2]"), 2);
 
 		// Bind Tex[3] to TU 3, set uniform
-		renderer::bind(textures["rock"], 3);
+		renderer::bind(textures["terrainRock"], 3);
 		glUniform1i(effects[meshName].get_uniform_location("tex[3]"), 3);
+
+		// Bind normalMaps[0] to TU 0, set uniform
+		renderer::bind(normal_maps["terrainZero"], 4);
+		glUniform1i(effects[meshName].get_uniform_location("normal_maps[0]"), 4);
+		// *********************************
+		//Bind normal_maps[1] to TU 1, set uniform
+		renderer::bind(normal_maps["terrainSand"], 5);
+		glUniform1i(effects[meshName].get_uniform_location("normal_maps[1]"), 5);
+
+		// Bind normal_maps[2] to TU 2, set uniform
+		renderer::bind(normal_maps["terrainGrass"], 6);
+		glUniform1i(effects[meshName].get_uniform_location("normal_maps[2]"), 6);
+
+		// Bind normal_maps[3] to TU 3, set uniform
+		renderer::bind(normal_maps["terrainRock"], 7);
+		glUniform1i(effects[meshName].get_uniform_location("normal_maps[3]"), 7);
 
 	}
 	else

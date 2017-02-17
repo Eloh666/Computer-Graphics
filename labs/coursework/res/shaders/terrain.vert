@@ -11,6 +11,10 @@ uniform mat3 N;
 layout(location = 0) in vec3 position;
 // Incoming normal
 layout(location = 2) in vec3 normal;
+// Incoming binormal
+layout(location = 3) in vec3 binormal;
+// Incoming tangent
+layout(location = 4) in vec3 tangent;
 // Incoming texture coordinate
 layout(location = 10) in vec2 tex_coord;
 // Incoming texture weight
@@ -24,6 +28,10 @@ layout(location = 1) out vec3 transformed_normal;
 layout(location = 2) out vec2 vertex_tex_coord;
 // Outgoing tex_weight
 layout(location = 3) out vec4 vertex_tex_weight;
+// Outgoing tangent
+layout(location = 4) out vec3 tangent_out;
+// Outgoing binormal
+layout(location = 5) out vec3 binormal_out;
 
 void main() {
   // Calculate screen position
@@ -36,4 +44,11 @@ void main() {
   vertex_tex_coord = tex_coord;
   // Pass through tex_weight
   vertex_tex_weight = tex_weight;
+
+  // Transform tangent
+  tangent_out = N * tangent;
+  // Transform binormal
+  binormal_out = N * binormal;
+
+
 }
