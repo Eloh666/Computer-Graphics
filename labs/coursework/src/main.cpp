@@ -17,6 +17,8 @@
 #include "meshes/mossRockMesh.h"
 #include "meshes/stoneSwordMesh.h"
 #include "meshes/stoneGuardMesh.h"
+#include "meshes/stoneRockMesh.h"
+#include "../../../../../GraphicsCoursework/debrisEff.h"
 
 
 using namespace std;
@@ -32,7 +34,11 @@ free_camera freeCam;
 
 mesh skybox;
 mesh grass;
+mesh debris;
+
 effect skyboxEffect;
+vector<mat4> debrisOffset;
+
 cubemap cube_map;
 
 map<string, mesh> meshes;
@@ -42,6 +48,8 @@ map<string, texture> alpha_maps;
 map<string, effect> effects;
 
 vec2 waterDelta;
+
+float debrisRotation;
 
 bool load_content() {
 
@@ -77,10 +85,15 @@ bool load_content() {
 		"textures/skybox/starfield_dn.tga", "textures/skybox/starfield_rt.tga", "textures/skybox/starfield_lf.tga" };
 	cube_map = cubemap(filenames);
 	skyboxEffect = createSkyboxEffect();
-
 	skybox.get_transform().scale = vec3(1000, 1000, 1000);
 
-	// Generates lampw
+	// Generates the debris field and their offsets
+	meshes["debris"] = createRockMesh();
+	effects["debris"] = createMultiLightEffect();
+	textures["debris"] = texture("textures/rockNorm.png", false, true);
+	debrisRotation = 0.0f;
+
+	// Generates lamp
 	meshes["lamp"] = createLampMesh();
 	textures["lamp"] = texture("textures/lampDiff.png", false, true);
 	effects["lamp"] = createMultiLightEffect();
@@ -112,9 +125,9 @@ bool load_content() {
 
 	// Generates the basic rock and loads its textures
 	//meshes["normalRock"] = createRockMesh();
-	textures["normalRock"] = texture("textures/rock.jpg", false, true);
+	//textures["normalRock"] = texture("textures/rock.jpg", false, true);
 	//normal_maps["normalRock"] = texture("textures/rockNorm.png", false, true);
-	effects["normalRock"] = createMultiLightEffect();
+	//effects["normalRock"] = createMultiLightEffect();
 
 	// Generates the mossyRock and loads its textures
 	meshes["mossyRock"] = createMossyRockMesh();
@@ -146,13 +159,14 @@ bool load_content() {
 	light.set_direction(normalize(meshes["boat"].get_transform().position));
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-	points[0].set_position(vec3(131, 24, -90));
+	points[0].set_position(meshes["lamp"].get_transform().position + vec3(0, 2, 0));
 	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
 	points[0].set_range(75);
 
-	points[1].set_position(meshes["moon"].get_transform().position);
-	points[1].set_light_colour(vec4(1, 1, 1, 1));
-	points[1].set_range(250);
+	//51, 102, 153
+	points[1].set_position(vec3(170, 235, 215));
+	points[1].set_light_colour(vec4(0.2, 0.4, 0.6, 1));
+	points[1].set_range(350);
 
 	points[2].set_position(vec3(40, 45, 4.3));
 	points[2].set_light_colour(vec4(1, 0.6, 0, 1));
@@ -177,7 +191,7 @@ bool load_content() {
 	spots[1].set_light_colour(vec4(1, 1, 1, 1));
 	spots[1].set_range(15);
 	spots[1].set_power(1.0f);
-	spots[1].set_direction(vec3(-400, 0, -400));
+	spots[1].set_direction(vec3(-400, 100, -400));
 
 	// Set camera properties
 	freeCam.set_position(vec3(-100, 145, -500));
@@ -263,6 +277,15 @@ bool update(float delta_time) {
 	cursor_x = current_x;
 	cursor_y = current_y;	
 
+
+
+	//Rotating moon around the Earth
+	auto positionVector = vec3(cos(debrisRotation)*45.5f, 25.0f, sin(debrisRotation)*45.5f);
+	meshes["debris"].get_transform().position = positionVector + meshes["guardian"].get_transform().position;
+	debrisRotation -= 1.0 * delta_time;
+
+	// *********************************
+
 	return true;
 }
 
@@ -294,30 +317,30 @@ void renderSkybox()
 	glEnable(GL_DEPTH_TEST);
 }
 
-void renderMesh(mesh &m, string meshName)
+void renderMesh(mesh &m, string meshName, effect &eff)
 {
-	// Bind effect
-	renderer::bind(effects[meshName]);
+	renderer::bind(eff);
+
 	// Create MVP matrix
 	auto M = m.get_transform().get_transform_matrix();
 	auto V = freeCam.get_view();
 	auto P = freeCam.get_projection();
 	auto MVP = P * V * M;
 	// Set MVP matrix uniform
-	glUniformMatrix4fv(effects[meshName].get_uniform_location("MVP"), // Location of uniform
+	glUniformMatrix4fv(eff.get_uniform_location("MVP"), // Location of uniform
 		1,                               // Number of values - 1 mat4
 		GL_FALSE,                        // Transpose the matrix?
 		value_ptr(MVP));                 // Pointer to matrix data
 										 // *********************************
 										 // Set M matrix uniform
-	glUniformMatrix4fv(effects[meshName].get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 
 	// Sets uniform for water movement
-	glUniform2fv(effects[meshName].get_uniform_location("waterDelta"), 1, value_ptr(waterDelta));
+	glUniform2fv(eff.get_uniform_location("waterDelta"), 1, value_ptr(waterDelta));
 
 	// Set N matrix uniform - remember - 3x3 matrix
 	auto normal = m.get_transform().get_normal_matrix();
-	glUniformMatrix3fv(effects[meshName].get_uniform_location("N"),
+	glUniformMatrix3fv(eff.get_uniform_location("N"),
 		1,
 		GL_FALSE,
 		value_ptr(normal));
@@ -337,13 +360,13 @@ void renderMesh(mesh &m, string meshName)
 	if (normal_maps.count(meshName) != 0 )
 	{
 		renderer::bind(normal_maps[meshName], 1);
-		glUniform1i(effects[meshName].get_uniform_location("normal_map"), 1);
+		glUniform1i(eff.get_uniform_location("normal_map"), 1);
 	}
 	if (alpha_maps.count(meshName) != 0)
 	{
 		glDisable(GL_CULL_FACE);
 		renderer::bind(alpha_maps[meshName], 1);
-		glUniform1i(effects[meshName].get_uniform_location("blendMap"), 1);
+		glUniform1i(eff.get_uniform_location("blendMap"), 1);
 	} else
 	{
 		glEnable(GL_CULL_FACE);
@@ -352,35 +375,35 @@ void renderMesh(mesh &m, string meshName)
 	{
 		// Bind Tex[0] to TU 0, set uniform
 		renderer::bind(textures["terrainZero"], 0);
-		glUniform1i(effects[meshName].get_uniform_location("tex[0]"), 0);
+		glUniform1i(eff.get_uniform_location("tex[0]"), 0);
 		// *********************************
 		//Bind Tex[1] to TU 1, set uniform
 		renderer::bind(textures["terrainSand"], 1);
-		glUniform1i(effects[meshName].get_uniform_location("tex[1]"), 1);
+		glUniform1i(eff.get_uniform_location("tex[1]"), 1);
 
 		// Bind Tex[2] to TU 2, set uniform
 		renderer::bind(textures["terrainGrass"], 2);
-		glUniform1i(effects[meshName].get_uniform_location("tex[2]"), 2);
+		glUniform1i(eff.get_uniform_location("tex[2]"), 2);
 
 		// Bind Tex[3] to TU 3, set uniform
 		renderer::bind(textures["terrainRock"], 3);
-		glUniform1i(effects[meshName].get_uniform_location("tex[3]"), 3);
+		glUniform1i(eff.get_uniform_location("tex[3]"), 3);
 
 		// Bind normalMaps[0] to TU 0, set uniform
 		renderer::bind(normal_maps["terrainZero"], 4);
-		glUniform1i(effects[meshName].get_uniform_location("normal_maps[0]"), 4);
+		glUniform1i(eff.get_uniform_location("normal_maps[0]"), 4);
 		// *********************************
 		//Bind normal_maps[1] to TU 1, set uniform
 		renderer::bind(normal_maps["terrainSand"], 5);
-		glUniform1i(effects[meshName].get_uniform_location("normal_maps[1]"), 5);
+		glUniform1i(eff.get_uniform_location("normal_maps[1]"), 5);
 
 		// Bind normal_maps[2] to TU 2, set uniform
 		renderer::bind(normal_maps["terrainGrass"], 6);
-		glUniform1i(effects[meshName].get_uniform_location("normal_maps[2]"), 6);
+		glUniform1i(eff.get_uniform_location("normal_maps[2]"), 6);
 
 		// Bind normal_maps[3] to TU 3, set uniform
 		renderer::bind(normal_maps["terrainRock"], 7);
-		glUniform1i(effects[meshName].get_uniform_location("normal_maps[3]"), 7);
+		glUniform1i(eff.get_uniform_location("normal_maps[3]"), 7);
 
 	}
 	else
@@ -389,7 +412,7 @@ void renderMesh(mesh &m, string meshName)
 		renderer::bind(textures[meshName], 0);
 
 		// Set tex uniform
-		glUniform1i(effects[meshName].get_uniform_location("tex"), 0);
+		glUniform1i(eff.get_uniform_location("tex"), 0);
 	}
 
 	// Set eye position - Get this from active camera
@@ -398,8 +421,6 @@ void renderMesh(mesh &m, string meshName)
 		1,
 		value_ptr(freeCam.get_position())
 		);
-	// Render mesh
-	renderer::render(m);
 
 	// *********************************
 
@@ -415,7 +436,8 @@ bool render() {
 	for (auto &e : meshes) {
 		auto m = e.second;
 		auto meshName = e.first;
-		renderMesh(m, meshName);
+		effect eff = effects[meshName];
+		renderMesh(m, meshName, eff);
 	}
 
 	return true;

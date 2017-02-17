@@ -7,6 +7,10 @@ uniform mat4 MVP;
 // Normal matrix
 uniform mat3 N;
 
+// Offset position
+uniform mat4 offsetMatrix;
+
+
 // Incoming position
 layout (location = 0) in vec3 position;
 // Incoming normal
@@ -24,7 +28,7 @@ layout (location = 2) out vec2 tex_coord_out;
 void main()
 {
   // Calculate screen position
-  gl_Position = MVP * vec4(position, 1.0);
+  gl_Position = (MVP * offsetMatrix) * vec4(position, 1.0);
   // *********************************
   // Output other values to fragment shader
     vertex_position = vec3(M * vec4(position, 1.0));
