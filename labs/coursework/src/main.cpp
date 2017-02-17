@@ -112,13 +112,13 @@ bool load_content() {
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	//points[0].set_position(vec3(37, 43.5, 0));
-	points[0].set_position(vec3(158, 29, -85));
+	points[0].set_position(vec3(131, 24, -90));
 	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
 	points[0].set_range(75);
 
-	points[1].set_position(meshes["moon"].get_transform().position);
-	points[1].set_light_colour(vec4(1, 1, 1, 1));
-	points[1].set_range(250);
+	//points[1].set_position(meshes["moon"].get_transform().position);
+	//points[1].set_light_colour(vec4(1, 1, 1, 1));
+	//points[1].set_range(250);
 
 	points[2].set_position(vec3(40, 45, 4.3));
 	points[2].set_light_colour(vec4(1, 0.6, 0, 1));

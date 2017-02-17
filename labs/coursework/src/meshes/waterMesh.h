@@ -12,8 +12,8 @@ mesh createWaterMesh()
 {
 
 	const texture height_map("textures/waterHM.jpg");
-	auto waterMesh = createTerrainMesh(height_map, 20, 20, 1.2);
-	waterMesh.get_transform().translate(vec3(0, -60, 0));
+	auto waterMesh = createTerrainMesh(height_map, 20, 20, 1);
+	waterMesh.get_transform().translate(vec3(0, -50, 0));
 	waterMesh.get_transform().scale += vec3(100, 100, 100);
 	waterMesh.get_material().set_shininess(10);
 
