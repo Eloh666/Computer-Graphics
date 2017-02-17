@@ -101,9 +101,9 @@ bool load_content() {
 	effects["grave"] = createMultiLightEffect();
 
 	// Generates the statue and loads its textures
-	meshes["statue"] = createStatueMesh();
-	textures["statue"] = texture("textures/buddha.jpg", false, true);
-	effects["statue"] = createMultiLightEffect();
+	//meshes["statue"] = createStatueMesh();
+	//textures["statue"] = texture("textures/buddha.jpg", false, true);
+	//effects["statue"] = createMultiLightEffect();
 
 	// Generates the katana and loads its textures
 	meshes["katana"] = createKatanaMesh();
