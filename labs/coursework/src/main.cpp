@@ -14,6 +14,9 @@
 #include "meshes/graveMesh.h"
 #include "meshes/statueMesh.h"
 #include "meshes/waterMesh.h"
+#include "meshes/mossRockMesh.h"
+#include "meshes/stoneSwordMesh.h"
+#include "meshes/stoneGuardMesh.h"
 
 
 using namespace std;
@@ -39,7 +42,6 @@ map<string, texture> alpha_maps;
 map<string, effect> effects;
 
 vec2 waterDelta;
-int iterations = 0;
 
 bool load_content() {
 
@@ -107,6 +109,37 @@ bool load_content() {
 	meshes["katana"] = createKatanaMesh();
 	textures["katana"] = texture("textures/katDiffuse.tga", false, true);
 	effects["katana"] = createMultiLightEffect();
+
+	// Generates the basic rock and loads its textures
+	//meshes["normalRock"] = createRockMesh();
+	textures["normalRock"] = texture("textures/rock.jpg", false, true);
+	//normal_maps["normalRock"] = texture("textures/rockNorm.png", false, true);
+	effects["normalRock"] = createMultiLightEffect();
+
+	// Generates the mossyRock and loads its textures
+	meshes["mossyRock"] = createMossyRockMesh();
+	geometry rockGeom = meshes["mossyRock"].get_geometry();
+	textures["mossyRock"] = texture("textures/mossyRock.jpg", false, true);
+	//normal_maps["mossyRock"] = texture("textures/mossyRockNorm.png", false, true);
+	effects["mossyRock"] = createMultiLightEffect();
+
+	// Generates the mossyRock and loads its textures
+	meshes["guardian"] = createStoneGuardian();
+	textures["guardian"] = texture("textures/guardian.psd", false, true);
+	//normal_maps["guardian"] = texture("textures/guardianNorm.tga", false, true);
+	effects["guardian"] = createMultiLightEffect();
+
+	// Generates the mossyRock and loads its textures
+	//meshes["ruins"] = createRuinsMesh();
+	textures["ruins"] = texture("textures/grayStoneWall.jpg", false, true);
+	effects["ruins"] = createMultiLightEffect();
+
+	// Generates the mossyRock and loads its textures
+	meshes["stoneSword"] = createStoneSwordMesh();
+	textures["stoneSword"] = texture("textures/statueStone.jpg", false, true);
+	//normal_maps["stoneSword"] = texture("textures/bladeNorms.tga", false, true);
+	effects["stoneSword"] = createMultiLightEffect();
+
 
 	// Set lighting values
 	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));

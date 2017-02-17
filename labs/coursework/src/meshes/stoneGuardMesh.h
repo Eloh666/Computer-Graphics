@@ -1,4 +1,3 @@
-
 #include <glm\glm.hpp>
 #include <graphics_framework.h>
 
@@ -8,18 +7,15 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createWaterMesh()
+mesh createStoneGuardian()
 {
+	auto statue = mesh(geometry("models/guardian.obj"));
+	statue.get_transform().translate(vec3(-200, 90, 50));
+	statue.get_transform().scale = vec3(20, 20, 20);
+	statue.get_transform().rotate(vec3(0, pi<float>(), 0));
+	statue.get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	statue.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	statue.get_material().set_shininess(65.0f);
 
-	const texture height_map("textures/waterHM.jpg");
-	auto waterMesh = createTerrainMesh(height_map, 20, 20, 1);
-	waterMesh.get_transform().translate(vec3(0, -50, 0));
-	waterMesh.get_transform().scale += vec3(100, 100, 100);
-	waterMesh.get_material().set_shininess(10);
-
-	waterMesh.get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
-	waterMesh.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	waterMesh.get_material().set_shininess(25.0f);
-
-	return waterMesh;
+	return statue;
 }
