@@ -7,7 +7,6 @@
 #include "effects/skyboxEff.h"
 #include "meshes/grassMesh.h"
 #include "effects/normalMapEff.h"
-#include "meshes/treeMesh.h"
 #include "effects/multiLightEff.h"
 #include "meshes/moonMesh.h"
 #include "meshes/boatMesh.h"
@@ -39,6 +38,9 @@ map<string, texture> normal_maps;
 map<string, texture> alpha_maps;
 map<string, effect> effects;
 
+vec2 waterDelta;
+int iterations = 0;
+
 bool load_content() {
 
 	// Generates the terrain and loads its textures
@@ -61,8 +63,7 @@ bool load_content() {
 	meshes["waterBase"] = createWaterMesh();
 	textures["waterBase"] = texture("textures/water.jpg", false, true);
 	normal_maps["waterBase"] = texture("textures/watNorm.png", false, true);
-	//effects["waterBase"] = createNormalMapEffect();
-	effects["waterBase"] = createTerrainEffect();
+	effects["waterBase"] = createNormalMapEffect();
 
 	// Generates the night skyboxs
 	skybox = createSkybox();
@@ -72,7 +73,6 @@ bool load_content() {
 	skyboxEffect = createSkyboxEffect();
 
 	skybox.get_transform().scale = vec3(1000, 1000, 1000);
-	//skybox.get_transform().translate(meshes["terrain"].get_transform().position + vec3(0, 0, 0));
 
 	// Generates lampw
 	meshes["lamp"] = createLampMesh();
@@ -106,13 +106,6 @@ bool load_content() {
 	textures["katana"] = texture("textures/katDiffuse.tga", false, true);
 	effects["katana"] = createMultiLightEffect();
 
-	// Generates the tree and loads its textures
-	//meshes["tree"] = createTree();
-	//textures["tree"] = texture("textures/palm.tga", false, true);
-	//alpha_maps["tree"] = texture("textures/palmA.jpeg", false, true);
-	//normal_maps["tree"] = texture("textures/treeNorm.tga");
-	//effects["tree"] = createMultiLightEffect();
-
 	// Set lighting values
 	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
 	light.set_direction(normalize(meshes["boat"].get_transform().position));
@@ -123,9 +116,9 @@ bool load_content() {
 	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
 	points[0].set_range(75);
 
-	//points[1].set_position(meshes["moon"].get_transform().position);
-	//points[1].set_light_colour(vec4(1, 1, 1, 1));
-	//points[1].set_range(250);
+	points[1].set_position(meshes["moon"].get_transform().position);
+	points[1].set_light_colour(vec4(1, 1, 1, 1));
+	points[1].set_range(250);
 
 	points[2].set_position(vec3(40, 45, 4.3));
 	points[2].set_light_colour(vec4(1, 0.6, 0, 1));
@@ -225,15 +218,16 @@ bool update(float delta_time) {
 		spots[1].set_position(freeCam.get_position());
 	}
 
+	// updates the water delta vector to mimick the movement
+		waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
+
 	// Move camera
 	freeCam.move(translation);
 	// Update the camera
 	freeCam.update(delta_time);
 	// Update cursor pos
 	cursor_x = current_x;
-	cursor_y = current_y;
-
-	
+	cursor_y = current_y;	
 
 	return true;
 }
@@ -283,6 +277,9 @@ void renderMesh(mesh &m, string meshName)
 										 // *********************************
 										 // Set M matrix uniform
 	glUniformMatrix4fv(effects[meshName].get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+
+	// Sets uniform for water movement
+	glUniform2fv(effects[meshName].get_uniform_location("waterDelta"), 1, value_ptr(waterDelta));
 
 	// Set N matrix uniform - remember - 3x3 matrix
 	auto normal = m.get_transform().get_normal_matrix();
@@ -376,7 +373,7 @@ bool render() {
 
 void main() {
 	// Create application
-	app application("52_Multifile_Shaders");
+	app application("Coursework");
 	// Set load content, update and render methods
 	application.set_load_content(load_content);
 	application.set_update(update);

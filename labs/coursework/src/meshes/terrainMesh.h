@@ -1,11 +1,11 @@
 #include <glm\glm.hpp>
 #include <graphics_framework.h>
+#include "../utility/generateTangentAndBinormal.h"
 
 
 using namespace std;
 using namespace graphics_framework;
 using namespace glm;
-
 
 mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale) {
 
@@ -145,6 +145,8 @@ mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned i
 	geom.add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
 	geom.add_buffer(tex_weights, BUFFER_INDEXES::TEXTURE_COORDS_1);
 	geom.add_index_buffer(indices);
+
+	generate_tb(geom, normals);
 
 	// Delete data
 	delete[] data;
