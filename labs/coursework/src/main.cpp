@@ -47,6 +47,8 @@ map<string, texture> normal_maps;
 map<string, texture> alpha_maps;
 map<string, effect> effects;
 
+vector<mesh> spheres;
+
 vec2 waterDelta;
 
 float debrisRotation;
@@ -72,7 +74,6 @@ bool load_content() {
 	
 	effects["terrain"] = createTerrainEffect();
 
-
 	// Generates water and loads its textures
 	meshes["waterBase"] = createWaterMesh();
 	textures["waterBase"] = texture("textures/water2.jpg", false, true);
@@ -88,10 +89,8 @@ bool load_content() {
 	skybox.get_transform().scale = vec3(1000, 1000, 1000);
 
 	// Generates the debris field and their offsets
-	meshes["debris"] = createRockMesh();
 	effects["debris"] = createMultiLightEffect();
 	textures["debris"] = texture("textures/rockNorm.png", false, true);
-	debrisRotation = 0.0f;
 
 	// Generates lamp
 	meshes["lamp"] = createLampMesh();
@@ -152,6 +151,8 @@ bool load_content() {
 	textures["stoneSword"] = texture("textures/statueStone.jpg", false, true);
 	//normal_maps["stoneSword"] = texture("textures/bladeNorms.tga", false, true);
 	effects["stoneSword"] = createMultiLightEffect();
+
+	spheres = generateSpheres(meshes["guardian"].get_transform().position + vec3(0, 25, 0));
 
 
 	// Set lighting values
@@ -280,9 +281,9 @@ bool update(float delta_time) {
 
 
 	//Rotating moon around the Earth
-	auto positionVector = vec3(cos(debrisRotation)*45.5f, 25.0f, sin(debrisRotation)*45.5f);
-	meshes["debris"].get_transform().position = positionVector + meshes["guardian"].get_transform().position;
-	debrisRotation -= 1.0 * delta_time;
+	//auto positionVector = vec3(cos(debrisRotation)*45.5f, 25.0f, sin(debrisRotation)*45.5f);
+	//meshes["debris"].get_transform().position = positionVector + meshes["guardian"].get_transform().position;
+	//debrisRotation -= 1.0 * delta_time;
 
 	// *********************************
 
@@ -428,9 +429,18 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 	renderer::render(m);
 }
 
+void renderDebris()
+{
+	for(auto &m : spheres)
+	{
+		renderMesh(m, "debris", createMultiLightEffect());
+	}
+}
+
 bool render() {
 	// Render skybox
 	renderSkybox();
+	renderDebris();
 
 	// Render meshes
 	for (auto &e : meshes) {
