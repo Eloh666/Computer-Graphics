@@ -1,6 +1,7 @@
 #include <glm\glm.hpp>
 #include <graphics_framework.h>
 #include "meshes/katanaMesh.h"
+#include "meshes/ruinsMesh.h"
 #include "meshes/terrainMesh.h"
 #include "effects/terrainEff.h"
 #include "meshes/skyboxMesh.h"
@@ -12,13 +13,11 @@
 #include "meshes/boatMesh.h"
 #include "meshes/lampMesh.h"
 #include "meshes/graveMesh.h"
-#include "meshes/statueMesh.h"
 #include "meshes/waterMesh.h"
 #include "meshes/mossRockMesh.h"
 #include "meshes/stoneSwordMesh.h"
 #include "meshes/stoneGuardMesh.h"
-#include "meshes/stoneRockMesh.h"
-#include "../../../../../GraphicsCoursework/debrisEff.h"
+#include "effects/movingWaterEff.h"
 
 
 using namespace std;
@@ -46,8 +45,6 @@ map<string, texture> textures;
 map<string, texture> normal_maps;
 map<string, texture> alpha_maps;
 map<string, effect> effects;
-
-vector<mesh> spheres;
 
 vec2 waterDelta;
 
@@ -78,7 +75,7 @@ bool load_content() {
 	meshes["waterBase"] = createWaterMesh();
 	textures["waterBase"] = texture("textures/water2.jpg", false, true);
 	normal_maps["waterBase"] = texture("textures/waterNormal.jpg", false, true);
-	effects["waterBase"] = createNormalMapEffect();
+	effects["waterBase"] = createMovingWaterEffect();
 
 	// Generates the night skyboxs
 	skybox = createSkybox();
@@ -87,10 +84,6 @@ bool load_content() {
 	cube_map = cubemap(filenames);
 	skyboxEffect = createSkyboxEffect();
 	skybox.get_transform().scale = vec3(1000, 1000, 1000);
-
-	// Generates the debris field and their offsets
-	effects["debris"] = createMultiLightEffect();
-	textures["debris"] = texture("textures/rockNorm.png", false, true);
 
 	// Generates lamp
 	meshes["lamp"] = createLampMesh();
@@ -105,7 +98,8 @@ bool load_content() {
 	// Generates the boat and loads its textures
 	meshes["boat"] = createBoatMesh();
 	textures["boat"] = texture("textures/boatTex.png", false, true);
-	effects["boat"] = createMultiLightEffect();
+	normal_maps["boat"] = texture("textures/woodNorm.jpg", false, true);
+	effects["boat"] = createNormalMapEffect();
 
 	// Generates the grave and loads its textures
 	meshes["grave"] = createGraveMesh();
@@ -130,16 +124,15 @@ bool load_content() {
 
 	// Generates the mossyRock and loads its textures
 	meshes["mossyRock"] = createMossyRockMesh();
-	geometry rockGeom = meshes["mossyRock"].get_geometry();
 	textures["mossyRock"] = texture("textures/mossyRock.jpg", false, true);
-	//normal_maps["mossyRock"] = texture("textures/mossyRockNorm.png", false, true);
-	effects["mossyRock"] = createMultiLightEffect();
+	normal_maps["mossyRock"] = texture("textures/mossyRockNorm.jpg", false, true);
+	effects["mossyRock"] = createNormalMapEffect();
 
 	// Generates the mossyRock and loads its textures
-	meshes["guardian"] = createStoneGuardian();
+	meshes["guardian"] = createStoneGuardianMesh();
 	textures["guardian"] = texture("textures/guardian.psd", false, true);
-	//normal_maps["guardian"] = texture("textures/guardianNorm.tga", false, true);
-	effects["guardian"] = createMultiLightEffect();
+	normal_maps["guardian"] = texture("textures/guardianNorm.tga", false, true);
+	effects["guardian"] = createNormalMapEffect();
 
 	// Generates the mossyRock and loads its textures
 	//meshes["ruins"] = createRuinsMesh();
@@ -149,10 +142,8 @@ bool load_content() {
 	// Generates the mossyRock and loads its textures
 	meshes["stoneSword"] = createStoneSwordMesh();
 	textures["stoneSword"] = texture("textures/statueStone.jpg", false, true);
-	//normal_maps["stoneSword"] = texture("textures/bladeNorms.tga", false, true);
-	effects["stoneSword"] = createMultiLightEffect();
-
-	spheres = generateSpheres(meshes["guardian"].get_transform().position + vec3(0, 25, 0));
+	normal_maps["stoneSword"] = texture("textures/bladeNorms.tga", false, true);
+	effects["stoneSword"] = createNormalMapEffect();
 
 
 	// Set lighting values
@@ -164,7 +155,6 @@ bool load_content() {
 	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
 	points[0].set_range(75);
 
-	//51, 102, 153
 	points[1].set_position(vec3(170, 235, 215));
 	points[1].set_light_colour(vec4(0.2, 0.4, 0.6, 1));
 	points[1].set_range(350);
@@ -280,7 +270,7 @@ bool update(float delta_time) {
 
 
 
-	//Rotating moon around the Earth
+	// Debris rotation
 	//auto positionVector = vec3(cos(debrisRotation)*45.5f, 25.0f, sin(debrisRotation)*45.5f);
 	//meshes["debris"].get_transform().position = positionVector + meshes["guardian"].get_transform().position;
 	//debrisRotation -= 1.0 * delta_time;
@@ -429,18 +419,9 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 	renderer::render(m);
 }
 
-void renderDebris()
-{
-	for(auto &m : spheres)
-	{
-		renderMesh(m, "debris", createMultiLightEffect());
-	}
-}
-
 bool render() {
 	// Render skybox
 	renderSkybox();
-	renderDebris();
 
 	// Render meshes
 	for (auto &e : meshes) {

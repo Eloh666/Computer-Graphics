@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createTree()
+mesh createTreeMesh()
 {
 	auto tree = mesh(geometry("models/palm.obj"));
 	tree.get_transform().scale = vec3(2.5, 1.5, 2.5);

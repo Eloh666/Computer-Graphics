@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createStoneGuardian()
+mesh createStoneGuardianMesh()
 {
 	auto statue = mesh(geometry("models/guardian.obj"));
 	statue.get_transform().translate(vec3(168, 200, 230));

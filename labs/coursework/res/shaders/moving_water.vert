@@ -7,6 +7,9 @@ uniform mat4 M;
 // The normal matrix
 uniform mat3 N;
 
+// water movement offset
+uniform vec2 waterDelta;
+
 // Incoming position
 layout(location = 0) in vec3 position;
 // Incoming normal
@@ -35,7 +38,7 @@ void main() {
   // Transform position into world space
   vertex_position = (M * vec4(position, 1.0)).xyz;
   // Pass through texture coordinate
-  tex_coord_out = tex_coord_in;
+  tex_coord_out = tex_coord_in + waterDelta;
   // Transform normal
   transformed_normal = N * normal;
 

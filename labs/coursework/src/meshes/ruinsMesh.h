@@ -9,13 +9,14 @@ using namespace glm;
 
 mesh createRuinsMesh()
 {
-	auto statue = mesh(geometry("models/ruin.obj"));
-	statue.get_transform().translate(vec3(168, 145, 230));
-	statue.get_transform().scale = vec3(2, 2, 2);
-	statue.get_transform().rotate(vec3(-half_pi<float>(), pi<float>(), 0.0f));
-	statue.get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
-	statue.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	statue.get_material().set_shininess(65.0f);
+	auto ruins = mesh(geometry("models/ruin.obj"));
+	ruins.get_transform().translate(vec3(-10, 50, 40));
+	ruins.get_transform().scale = vec3(0.15, 0.15, 0.15);
+	ruins.get_transform().rotate(vec3(0, -half_pi<float>() * 0.5, 0));
+	ruins.get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	ruins.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-	return statue;
+	ruins.get_material().set_shininess(65.0f);
+
+	return ruins;
 }
