@@ -67,18 +67,22 @@ void main() {
   vec4 tex_colour = texture(tex, tex_coord);
   // Calculate colour for direction light
   colour = calculate_direction(light, mat, normal, view_dir, tex_colour);
-  colour.a = 1.0;
 
   // *********************************
   // Calculate fog coord
   // - convert from homogeneous
   // - ensure value is positive (we want the size of the value)
 
+  float fog_coord = abs(CS_position.z / CS_position.w);
 
   // Calculate fog factor
 
+  float fog_factor = calculate_fog(fog_coord, fog_colour, fog_start, fog_end, fog_density, fog_type);
 
   // Colour is mix between colour and fog colour based on factor
+
+  colour = mix(colour, fog_colour, fog_factor);
+  colour.a = 1.0;
 
   // *********************************
 }
