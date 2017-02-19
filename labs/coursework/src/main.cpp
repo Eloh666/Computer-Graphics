@@ -1,7 +1,6 @@
 #include <glm\glm.hpp>
 #include <graphics_framework.h>
 #include "meshes/katanaMesh.h"
-#include "meshes/ruinsMesh.h"
 #include "meshes/terrainMesh.h"
 #include "effects/terrainEff.h"
 #include "meshes/skyboxMesh.h"
@@ -18,7 +17,8 @@
 #include "meshes/stoneSwordMesh.h"
 #include "meshes/stoneGuardMesh.h"
 #include "effects/movingWaterEff.h"
-
+#include "effects/debrisEff.h"
+#include "rendering/debrisTransforms.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -33,7 +33,6 @@ free_camera freeCam;
 
 mesh skybox;
 mesh grass;
-mesh debris;
 
 effect skyboxEffect;
 vector<mat4> debrisOffset;
@@ -45,6 +44,28 @@ map<string, texture> textures;
 map<string, texture> normal_maps;
 map<string, texture> alpha_maps;
 map<string, effect> effects;
+
+
+const int rotatingFloaterNumCrystal = 150;
+const int rotatingFloaterNumAstCrystal = 100;
+const int rotatingFloaterNumDebris = 250;
+
+mesh crystal;
+mesh asteroidCrystal;
+mesh generalDebris;
+
+
+vector<mat4> crystalOriginalTransforms(rotatingFloaterNumCrystal);
+vector<mat4> crystalRotatingDebris(rotatingFloaterNumCrystal);
+
+vector<mat4> asteroidCrystalOriginalTransforms(rotatingFloaterNumAstCrystal);
+vector<mat4> asteroidCrystalRotatingDebris(rotatingFloaterNumAstCrystal);
+
+vector<mat4> generalDebrisOriginalTransforms(rotatingFloaterNumDebris);
+vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
+
+effect rotatingDebrisEffect;
+vec3 gemPosition;
 
 vec2 waterDelta;
 
@@ -68,7 +89,7 @@ bool load_content() {
 	normal_maps["terrainSand"] = texture("textures/terrainSandOne.jpg", false, true);
 	normal_maps["terrainGrass"] = texture("textures/terrainGrassNorm.png", false, true);
 	normal_maps["terrainRock"] = texture("textures/terrainRockNorm.jpg", false, true);
-	
+
 	effects["terrain"] = createTerrainEffect();
 
 	// Generates water and loads its textures
@@ -133,6 +154,32 @@ bool load_content() {
 	textures["guardian"] = texture("textures/guardian.psd", false, true);
 	normal_maps["guardian"] = texture("textures/guardianNorm.tga", false, true);
 	effects["guardian"] = createNormalMapEffect();
+
+	// Setup of the floating spheres dataon = 0.0f;
+	crystal = mesh(geometry("models/crystal.obj"));
+	asteroidCrystal = mesh(geometry("models/astCrystal.obj"));
+	generalDebris = mesh(geometry("models/rock.obj"));
+
+	textures["crystal"] = texture("textures/crystalDiffuse.jpg", false, true);
+	normal_maps["crystal"] = texture("textures/chrystalNormal.png", false, true);
+	gemPosition = vec3(170, 230, 230);
+	createSpheresTransforms(crystalOriginalTransforms, rotatingFloaterNumCrystal, gemPosition, 0.075);
+	createSpheresTransforms(asteroidCrystalOriginalTransforms, rotatingFloaterNumAstCrystal, gemPosition, 0.05);
+	createSpheresTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.1);
+	for (auto i = 0; i < rotatingFloaterNumCrystal; i++)
+	{
+		crystalRotatingDebris[i] = crystalOriginalTransforms[i];
+	}
+	for (auto i = 0; i < rotatingFloaterNumAstCrystal; i++)
+	{
+		asteroidCrystalRotatingDebris[i] = asteroidCrystalOriginalTransforms[i];
+		
+	}
+	for (auto i = 0; i < rotatingFloaterNumDebris; i++)
+	{
+		generalDebrisRotatingDebris[i] = generalDebrisOriginalTransforms[i];
+	}
+	rotatingDebrisEffect = createMultiInstanceEffect();
 
 	// Generates the mossyRock and loads its textures
 	//meshes["ruins"] = createRuinsMesh();
@@ -258,7 +305,7 @@ bool update(float delta_time) {
 	}
 
 	// updates the water delta vector to mimick the movement
-		waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
+	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
 
 	// Move camera
 	freeCam.move(translation);
@@ -266,14 +313,23 @@ bool update(float delta_time) {
 	freeCam.update(delta_time);
 	// Update cursor pos
 	cursor_x = current_x;
-	cursor_y = current_y;	
+	cursor_y = current_y;
 
-
-
-	// Debris rotation
-	//auto positionVector = vec3(cos(debrisRotation)*45.5f, 25.0f, sin(debrisRotation)*45.5f);
-	//meshes["debris"].get_transform().position = positionVector + meshes["guardian"].get_transform().position;
-	//debrisRotation -= 1.0 * delta_time;
+	auto positionVector = vec3(cos(debrisRotation)*100.5f, 0, sin(debrisRotation)*100.5f);
+	for (int i = 0; i < rotatingFloaterNumCrystal; i++)
+	{
+		crystalRotatingDebris[i] = translate(crystalOriginalTransforms[i], positionVector * 2.0f + gemPosition);
+	}
+	positionVector = vec3(cos(debrisRotation)*10.5f, 0, sin(debrisRotation)*10.5f);
+	for (int i = 0; i < rotatingFloaterNumAstCrystal; i++)
+	{
+		asteroidCrystalRotatingDebris[i] = translate(asteroidCrystalOriginalTransforms[i], positionVector + gemPosition);
+	}
+	for (int i = 0; i < rotatingFloaterNumDebris; i++)
+	{
+		generalDebrisRotatingDebris[i] = translate(generalDebrisOriginalTransforms[i], (positionVector * 3.0f) + gemPosition);
+	}
+	debrisRotation -= 1.0 * delta_time;
 
 	// *********************************
 
@@ -308,26 +364,13 @@ void renderSkybox()
 	glEnable(GL_DEPTH_TEST);
 }
 
-void renderMesh(mesh &m, string meshName, effect &eff)
+void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 {
-	renderer::bind(eff);
-
-	// Create MVP matrix
-	auto M = m.get_transform().get_transform_matrix();
-	auto V = freeCam.get_view();
-	auto P = freeCam.get_projection();
-	auto MVP = P * V * M;
-	// Set MVP matrix uniform
-	glUniformMatrix4fv(eff.get_uniform_location("MVP"), // Location of uniform
-		1,                               // Number of values - 1 mat4
-		GL_FALSE,                        // Transpose the matrix?
-		value_ptr(MVP));                 // Pointer to matrix data
-										 // *********************************
-										 // Set M matrix uniform
-	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
-
 	// Sets uniform for water movement
-	glUniform2fv(eff.get_uniform_location("waterDelta"), 1, value_ptr(waterDelta));
+	if (meshName == "waterBase")
+	{
+		glUniform2fv(eff.get_uniform_location("waterDelta"), 1, value_ptr(waterDelta));
+	}
 
 	// Set N matrix uniform - remember - 3x3 matrix
 	auto normal = m.get_transform().get_normal_matrix();
@@ -348,7 +391,7 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 	// Bind env light
 	renderer::bind(light, "light");
 
-	if (normal_maps.count(meshName) != 0 )
+	if (normal_maps.count(meshName) != 0)
 	{
 		renderer::bind(normal_maps[meshName], 1);
 		glUniform1i(eff.get_uniform_location("normal_map"), 1);
@@ -358,7 +401,8 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 		glDisable(GL_CULL_FACE);
 		renderer::bind(alpha_maps[meshName], 1);
 		glUniform1i(eff.get_uniform_location("blendMap"), 1);
-	} else
+	}
+	else
 	{
 		glEnable(GL_CULL_FACE);
 	}
@@ -405,23 +449,68 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 		// Set tex uniform
 		glUniform1i(eff.get_uniform_location("tex"), 0);
 	}
-
-	// Set eye position - Get this from active camera
 	glUniform3fv(
-		effects[meshName].get_uniform_location("eye_pos"),
+		eff.get_uniform_location("eye_pos"),
 		1,
 		value_ptr(freeCam.get_position())
 		);
+}
 
-	// *********************************
+void renderMesh(mesh &m, string meshName, effect &eff)
+{
+	renderer::bind(eff);
+
+	// Create MVP matrix
+	auto M = m.get_transform().get_transform_matrix();
+	auto V = freeCam.get_view();
+	auto P = freeCam.get_projection();
+	auto MVP = P * V * M;
+	// Set MVP matrix uniform
+	glUniformMatrix4fv(eff.get_uniform_location("MVP"),
+		1,
+		GL_FALSE,
+		value_ptr(MVP));
+	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+
+	setupGeneralBindings(m, meshName, eff);
 
 	// Render mesh
 	renderer::render(m);
 }
 
+void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, effect eff)
+{
+	// sets up the buffer
+	GLuint buffer;
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &transforms[0], GL_STATIC_DRAW);
+
+	GLuint VAO = model.get_geometry().get_array_object();
+	glBindVertexArray(VAO);
+
+	// sets up the other thingies
+	
+	renderer::bind(eff);
+
+	auto V = freeCam.get_view();
+	glUniformMatrix4fv(eff.get_uniform_location("view"), 1, GL_FALSE, value_ptr(V));
+	auto P = freeCam.get_projection();
+	glUniformMatrix4fv(eff.get_uniform_location("projection"), 1, GL_FALSE, value_ptr(P));
+
+	setupGeneralBindings(model, "crystal", eff);
+	renderer::render_instancieted(model, amount);
+}
+
 bool render() {
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	// Render skybox
 	renderSkybox();
+	renderFloatingDebris(crystal, rotatingFloaterNumCrystal, crystalRotatingDebris, rotatingDebrisEffect);
+	renderFloatingDebris(asteroidCrystal, rotatingFloaterNumAstCrystal, asteroidCrystalRotatingDebris, rotatingDebrisEffect);
+	renderFloatingDebris(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, rotatingDebrisEffect);
 
 	// Render meshes
 	for (auto &e : meshes) {

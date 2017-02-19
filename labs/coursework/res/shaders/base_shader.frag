@@ -1,8 +1,11 @@
-#version 440
+#version 440 core
+// Outgoing colour
+layout(location = 0) out vec4 colour;
 
-layout (location = 0) out vec4 colour;
+//uniform sampler2D texture_diffuse1;
 
 void main()
 {
-	colour = vec4(1.0, 0.0, 0.0, 1.0);
+  //  color = texture(texture_diffuse1, TexCoords);
+  colour = vec4(1.0, 0.0, 0.0, 1.0);
 }
