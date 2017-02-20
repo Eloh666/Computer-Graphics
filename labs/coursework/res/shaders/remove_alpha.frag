@@ -106,5 +106,8 @@ void main() {
   }
 
   colour = removeAlpha(tex_colour, blendMap, tex_coord);
+  if(colour[3] < 0.5){
+	discard;
+  }
 
 }

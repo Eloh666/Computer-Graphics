@@ -19,6 +19,7 @@
 #include "effects/movingWaterEff.h"
 #include "effects/debrisEff.h"
 #include "rendering/debrisTransforms.h"
+#include "meshes/treeMesh.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -53,6 +54,9 @@ const int rotatingFloaterNumDebris = 250;
 mesh crystal;
 mesh asteroidCrystal;
 mesh generalDebris;
+
+mesh violet;
+effect violetEffect;
 
 
 vector<mat4> crystalOriginalTransforms(rotatingFloaterNumCrystal);
@@ -132,6 +136,12 @@ bool load_content() {
 	//textures["statue"] = texture("textures/buddha.jpg", false, true);
 	//effects["statue"] = createMultiLightEffect();
 
+	// Generates the statue and loads its textures
+	violet = createTreeMesh();
+	textures["violet"] = texture("textures/violet.png", false, true);
+	alpha_maps["violet"] = texture("textures/violet_a.jpg", false, true);
+	violetEffect = createMultiLightRemoveAlphaEffect();
+
 	// Generates the katana and loads its textures
 	meshes["katana"] = createKatanaMesh();
 	textures["katana"] = texture("textures/katDiffuse.tga", false, true);
@@ -162,7 +172,7 @@ bool load_content() {
 
 	textures["crystal"] = texture("textures/crystalDiffuse.jpg", false, true);
 	normal_maps["crystal"] = texture("textures/chrystalNormal.png", false, true);
-	gemPosition = vec3(170, 230, 230);
+	gemPosition = vec3(150, 230, 210);
 	createSpheresTransforms(crystalOriginalTransforms, rotatingFloaterNumCrystal, gemPosition, 0.075);
 	createSpheresTransforms(asteroidCrystalOriginalTransforms, rotatingFloaterNumAstCrystal, gemPosition, 0.05);
 	createSpheresTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.1);
@@ -191,21 +201,28 @@ bool load_content() {
 	textures["stoneSword"] = texture("textures/statueStone.jpg", false, true);
 	normal_maps["stoneSword"] = texture("textures/bladeNorms.tga", false, true);
 	effects["stoneSword"] = createNormalMapEffect();
-
+	
+	meshes["deadTree"] = createDeadTreeMesh();
+	textures["deadTree"] = texture("textures/deadTree.jpg", false, true);
+	normal_maps["deadTree"] = texture("textures/deadTreeNorm.jpg", false, true);
+	effects["deadTree"] = createNormalMapEffect();
 
 	// Set lighting values
 	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
 	light.set_direction(normalize(meshes["boat"].get_transform().position));
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
+	// boat lantern
 	points[0].set_position(meshes["lamp"].get_transform().position + vec3(0, 2, 0));
 	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
 	points[0].set_range(75);
 
-	points[1].set_position(vec3(170, 235, 215));
-	points[1].set_light_colour(vec4(0.2, 0.4, 0.6, 1));
+	// guardian gem point light
+	points[1].set_position(vec3(170, 230, 217.5));
+	points[1].set_light_colour(vec4(0.4, 0.6, 1, 1));
 	points[1].set_range(350);
 
+	// grave candles
 	points[2].set_position(vec3(40, 45, 4.3));
 	points[2].set_light_colour(vec4(1, 0.6, 0, 1));
 	points[2].set_range(15);
@@ -218,22 +235,30 @@ bool load_content() {
 	points[4].set_light_colour(vec4(1, 0.6, 0, 1));
 	points[4].set_range(15);
 
-
-	spots[0].set_position(vec3(281, 324, 205));
+	// spot onto the moon surface
+	spots[0].set_position(vec3(-300, 365, 290));
 	spots[0].set_light_colour(vec4(1, 1, 1, 1));
-	spots[0].set_range(5);
+	spots[0].set_range(4);
 	spots[0].set_power(1.0f);
-	spots[0].set_direction(vec3(350, 362, 242));
+	spots[0].set_direction(vec3(-350, 385, 285));
 
-	spots[1].set_position(vec3(231, 274, 205));
+	// moon general light
+	spots[1].set_position(vec3(-350, 385, 285));
 	spots[1].set_light_colour(vec4(1, 1, 1, 1));
 	spots[1].set_range(15);
 	spots[1].set_power(1.0f);
-	spots[1].set_direction(vec3(-400, 100, -400));
+	spots[1].set_direction(vec3(600, 100, -350));
+
+	//guardian blue spot
+	spots[2].set_position(vec3(170, 230, 217.5));
+	spots[2].set_light_colour(vec4(0.1, 0.95, 0.9, 1));
+	spots[2].set_range(5);
+	spots[2].set_power(1.0f);
+	spots[2].set_direction(vec3(170, 230, -300));
 
 	// Set camera properties
-	freeCam.set_position(vec3(-100, 145, -500));
-	freeCam.set_target(normalize(meshes["katana"].get_transform().position));
+	freeCam.set_position(vec3(400, 100, -300));
+	freeCam.set_target(vec3(100, 100, 100));
 	freeCam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 3000.0f);
 	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	return true;
@@ -301,7 +326,10 @@ bool update(float delta_time) {
 		cout << freeCam.get_position().z << endl;
 	}
 	if (glfwGetKey(renderer::get_window(), 'N')) {
-		spots[1].set_position(freeCam.get_position());
+		spots[0].set_position(freeCam.get_position());
+	}
+	if (glfwGetKey(renderer::get_window(), 'G')) {
+		spots[0].set_direction(freeCam.get_position());
 	}
 
 	// updates the water delta vector to mimick the movement
@@ -519,7 +547,7 @@ bool render() {
 		effect eff = effects[meshName];
 		renderMesh(m, meshName, eff);
 	}
-
+	renderMesh(violet, "violet", violetEffect);
 	return true;
 }
 
