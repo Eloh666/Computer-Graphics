@@ -20,60 +20,62 @@
 #include "effects/debrisEff.h"
 #include "rendering/debrisTransforms.h"
 #include "meshes/treeMesh.h"
+#include "lights/setupLights.h"
+#include "cameras/setupCameras.h"
+#include "meshes/amillaryMesh.h"
 
 using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
 
-target_camera staticCam;
+// lights
 directional_light light;
-vector<point_light> points(5);
+vector<point_light> points(6);
 vector<spot_light> spots(5);
+
+// cameras
 free_camera freeCam;
+camera *activeCam;
+vector<target_camera> targetCameras(7);
+chase_camera chaseCamera;
 
-mesh skybox;
-mesh grass;
 
-effect skyboxEffect;
-vector<mat4> debrisOffset;
-
-cubemap cube_map;
-
+// meshes
 map<string, mesh> meshes;
-map<string, texture> textures;
-map<string, texture> normal_maps;
-map<string, texture> alpha_maps;
-map<string, effect> effects;
 
-
-const int rotatingFloaterNumCrystal = 150;
-const int rotatingFloaterNumAstCrystal = 100;
-const int rotatingFloaterNumDebris = 250;
-
+mesh violet;
+mesh skybox;
 mesh crystal;
 mesh asteroidCrystal;
 mesh generalDebris;
 
-mesh violet;
+//effects
+map<string, effect> effects;
+
+effect skyboxEffect;
 effect violetEffect;
+effect rotatingDebrisEffect;
 
+// textures
+map<string, texture> textures;
+map<string, texture> normal_maps;
+map<string, texture> alpha_maps;
+cubemap cube_map;
 
-vector<mat4> crystalOriginalTransforms(rotatingFloaterNumCrystal);
-vector<mat4> crystalRotatingDebris(rotatingFloaterNumCrystal);
+// transforms and indeces for the debris ring
 
-vector<mat4> asteroidCrystalOriginalTransforms(rotatingFloaterNumAstCrystal);
-vector<mat4> asteroidCrystalRotatingDebris(rotatingFloaterNumAstCrystal);
+vec3 gemPosition;
+float rotationAngle;
+
+const int rotatingFloaterNumDebris = 500;
 
 vector<mat4> generalDebrisOriginalTransforms(rotatingFloaterNumDebris);
 vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
 
-effect rotatingDebrisEffect;
-vec3 gemPosition;
+// water flowing delta
 
 vec2 waterDelta;
-
-float debrisRotation;
 
 bool load_content() {
 
@@ -110,10 +112,10 @@ bool load_content() {
 	skyboxEffect = createSkyboxEffect();
 	skybox.get_transform().scale = vec3(1000, 1000, 1000);
 
-	// Generates lamp
-	meshes["lamp"] = createLampMesh();
-	textures["lamp"] = texture("textures/lampDiff.png", false, true);
-	effects["lamp"] = createMultiLightEffect();
+	// Generates lantern
+	meshes["lantern"] = createLampMesh();
+	textures["lantern"] = texture("textures/lampDiff.png", false, true);
+	effects["lantern"] = createMultiLightEffect();
 
 	// Generates the moon and loads its textures
 	meshes["moon"] = createMoonMesh();
@@ -132,11 +134,6 @@ bool load_content() {
 	effects["grave"] = createMultiLightEffect();
 
 	// Generates the statue and loads its textures
-	//meshes["statue"] = createStatueMesh();
-	//textures["statue"] = texture("textures/buddha.jpg", false, true);
-	//effects["statue"] = createMultiLightEffect();
-
-	// Generates the statue and loads its textures
 	violet = createTreeMesh();
 	textures["violet"] = texture("textures/violet.png", false, true);
 	alpha_maps["violet"] = texture("textures/violet_a.jpg", false, true);
@@ -148,10 +145,10 @@ bool load_content() {
 	effects["katana"] = createMultiLightEffect();
 
 	// Generates the basic rock and loads its textures
-	//meshes["normalRock"] = createRockMesh();
-	//textures["normalRock"] = texture("textures/rock.jpg", false, true);
-	//normal_maps["normalRock"] = texture("textures/rockNorm.png", false, true);
-	//effects["normalRock"] = createMultiLightEffect();
+	meshes["amillary"] = createAmillaryMesh();
+	textures["amillary"] = texture("textures/metal.jpg", false, true);
+	normal_maps["amillary"] = texture("textures/metalNorm.jpg", false, true);
+	effects["amillary"] = createMultiLightEffect();
 
 	// Generates the mossyRock and loads its textures
 	meshes["mossyRock"] = createMossyRockMesh();
@@ -173,18 +170,7 @@ bool load_content() {
 	textures["crystal"] = texture("textures/crystalDiffuse.jpg", false, true);
 	normal_maps["crystal"] = texture("textures/chrystalNormal.png", false, true);
 	gemPosition = vec3(150, 230, 210);
-	createSpheresTransforms(crystalOriginalTransforms, rotatingFloaterNumCrystal, gemPosition, 0.075);
-	createSpheresTransforms(asteroidCrystalOriginalTransforms, rotatingFloaterNumAstCrystal, gemPosition, 0.05);
-	createSpheresTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.1);
-	for (auto i = 0; i < rotatingFloaterNumCrystal; i++)
-	{
-		crystalRotatingDebris[i] = crystalOriginalTransforms[i];
-	}
-	for (auto i = 0; i < rotatingFloaterNumAstCrystal; i++)
-	{
-		asteroidCrystalRotatingDebris[i] = asteroidCrystalOriginalTransforms[i];
-		
-	}
+	createSpheresTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.05f);
 	for (auto i = 0; i < rotatingFloaterNumDebris; i++)
 	{
 		generalDebrisRotatingDebris[i] = generalDebrisOriginalTransforms[i];
@@ -207,82 +193,33 @@ bool load_content() {
 	normal_maps["deadTree"] = texture("textures/deadTreeNorm.jpg", false, true);
 	effects["deadTree"] = createNormalMapEffect();
 
-	// Set lighting values
+	// Set sets up lightning values
 	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
 	light.set_direction(normalize(meshes["boat"].get_transform().position));
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-	// boat lantern
-	points[0].set_position(meshes["lamp"].get_transform().position + vec3(0, 2, 0));
-	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
-	points[0].set_range(75);
-
-	// guardian gem point light
-	points[1].set_position(vec3(170, 230, 217.5));
-	points[1].set_light_colour(vec4(0.4, 0.6, 1, 1));
-	points[1].set_range(350);
-
-	// grave candles
-	points[2].set_position(vec3(40, 45, 4.3));
-	points[2].set_light_colour(vec4(1, 0.6, 0, 1));
-	points[2].set_range(15);
-
-	points[3].set_position(vec3(38, 45, 4.3));
-	points[3].set_light_colour(vec4(1, 0.6, 0, 1));
-	points[3].set_range(15);
-
-	points[4].set_position(vec3(36, 45, 4.3));
-	points[4].set_light_colour(vec4(1, 0.6, 0, 1));
-	points[4].set_range(15);
-
-	// spot onto the moon surface
-	spots[0].set_position(vec3(-300, 365, 290));
-	spots[0].set_light_colour(vec4(1, 1, 1, 1));
-	spots[0].set_range(4);
-	spots[0].set_power(1.0f);
-	spots[0].set_direction(vec3(-350, 385, 285));
-
-	// moon general light
-	spots[1].set_position(vec3(-350, 385, 285));
-	spots[1].set_light_colour(vec4(1, 1, 1, 1));
-	spots[1].set_range(15);
-	spots[1].set_power(1.0f);
-	spots[1].set_direction(vec3(600, 100, -350));
-
-	//guardian blue spot
-	spots[2].set_position(vec3(170, 230, 217.5));
-	spots[2].set_light_colour(vec4(0.1, 0.95, 0.9, 1));
-	spots[2].set_range(5);
-	spots[2].set_power(1.0f);
-	spots[2].set_direction(vec3(170, 230, -300));
+	initPointLights(points);
+	initSpotLights(spots);
 
 	// Set camera properties
-	freeCam.set_position(vec3(400, 100, -300));
-	freeCam.set_target(vec3(100, 100, 100));
-	freeCam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 3000.0f);
+
+	setupFreeCam(freeCam);
+	setupTargetCameras(targetCameras, meshes);
+	activeCam = &freeCam;
+
+	
 	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	return true;
 }
 
 bool update(float delta_time) {
+
+	// updates the water delta vector to mimick the movement
+	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
+
+
+
 	// The ratio of pixels to rotation - remember the fov
-	static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
-	static double ratio_height =
-		(quarter_pi<float>() * renderer::get_screen_aspect()) / static_cast<float>(renderer::get_screen_height());
-	static double cursor_x = 0.0;
-	static double cursor_y = 0.0;
-	double current_x;
-	double current_y;
-	// Get the current cursor position
-	glfwGetCursorPos(renderer::get_window(), &current_x, &current_y);
-	// Calculate delta of cursor positions from last frame
-	double delta_x = current_x - cursor_x;
-	double delta_y = current_y - cursor_y;
-	// Multiply deltas by ratios - gets actual change in orientation
-	delta_x *= ratio_width;
-	delta_y *= ratio_height;
-	// Rotate cameras by delta
-	freeCam.rotate(delta_x, -delta_y);
 	// Use keyboard to move the camera - WASD
 	vec3 translation(0.0f, 0.0f, 0.0f);
 	if (glfwGetKey(renderer::get_window(), 'W')) {
@@ -325,39 +262,72 @@ bool update(float delta_time) {
 		cout << freeCam.get_position().y << endl;
 		cout << freeCam.get_position().z << endl;
 	}
-	if (glfwGetKey(renderer::get_window(), 'N')) {
-		spots[0].set_position(freeCam.get_position());
-	}
-	if (glfwGetKey(renderer::get_window(), 'G')) {
-		spots[0].set_direction(freeCam.get_position());
+	if (glfwGetKey(renderer::get_window(), 'B')) {
+		cout << activeCam->get_position().x << endl;
+		cout << activeCam->get_position().y << endl;
+		cout << activeCam->get_position().z << endl;
 	}
 
-	// updates the water delta vector to mimick the movement
-	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), 'F')) {
+		activeCam = &freeCam;
+	}
+	// activates chase cam
+	if (glfwGetKey(renderer::get_window(), 'C')) {
+		activeCam = &chaseCamera;
+	}
 
-	// Move camera
-	freeCam.move(translation);
+	// activates static target cameras
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F1)) {
+		activeCam = &targetCameras[0];
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F2)) {
+		activeCam = &targetCameras[1];
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F3)) {
+		activeCam = &targetCameras[2];
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F4)) {
+		activeCam = &targetCameras[3];
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F5)) {
+		activeCam = &targetCameras[4];
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F6)) {
+		activeCam = &targetCameras[5];
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F7)) {
+		activeCam = &targetCameras[6];
+	}
+
+	// handles free camera movement if active
+	if(activeCam == &freeCam)
+	{
+		freeCam.set_target(activeCam->get_target());
+		handleFreeCameraMovement(freeCam, delta_time, translation);
+	}
+
 	// Update the camera
-	freeCam.update(delta_time);
-	// Update cursor pos
-	cursor_x = current_x;
-	cursor_y = current_y;
+	activeCam->update(delta_time);
 
-	auto positionVector = vec3(cos(debrisRotation)*100.5f, 0, sin(debrisRotation)*100.5f);
-	for (int i = 0; i < rotatingFloaterNumCrystal; i++)
-	{
-		crystalRotatingDebris[i] = translate(crystalOriginalTransforms[i], positionVector * 2.0f + gemPosition);
-	}
-	positionVector = vec3(cos(debrisRotation)*10.5f, 0, sin(debrisRotation)*10.5f);
-	for (int i = 0; i < rotatingFloaterNumAstCrystal; i++)
-	{
-		asteroidCrystalRotatingDebris[i] = translate(asteroidCrystalOriginalTransforms[i], positionVector + gemPosition);
-	}
+
+	// Rotates the amillary around the statue
+	float amillaryRotation = rotationAngle * 0.001f;
+	auto rotationPosition = vec3(cos(rotationAngle * 0.5f)*140.0f, 0, sin(rotationAngle * 0.5f)*140.0f);
+
+
+	meshes["amillary"].get_transform().rotate(vec3(amillaryRotation, amillaryRotation, amillaryRotation));
+	meshes["amillary"].get_transform().position = rotationPosition + gemPosition + vec3(0, 25, 0);
+	points[5].set_position(meshes["amillary"].get_transform().position);
+
+	// Debris cloud
+	// Small floaters
+	rotationPosition = vec3(cos(rotationAngle)*5.0f, -50, sin(rotationAngle)*5.0f);
 	for (int i = 0; i < rotatingFloaterNumDebris; i++)
 	{
-		generalDebrisRotatingDebris[i] = translate(generalDebrisOriginalTransforms[i], (positionVector * 3.0f) + gemPosition);
+		generalDebrisRotatingDebris[i] = translate(generalDebrisOriginalTransforms[i], rotationPosition  + meshes["amillary"].get_transform().position);
 	}
-	debrisRotation -= 1.0 * delta_time;
+	rotationAngle -= 1.0 * delta_time;
 
 	// *********************************
 
@@ -374,8 +344,8 @@ void renderSkybox()
 	// Calculate MVP for the skybox
 
 	auto M = skybox.get_transform().get_transform_matrix();
-	auto V = freeCam.get_view();
-	auto P = freeCam.get_projection();
+	auto V = activeCam->get_view();
+	auto P = activeCam->get_projection();
 	auto MVP = P * V * M;
 
 
@@ -480,7 +450,7 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 	glUniform3fv(
 		eff.get_uniform_location("eye_pos"),
 		1,
-		value_ptr(freeCam.get_position())
+		value_ptr(activeCam->get_position())
 		);
 }
 
@@ -490,8 +460,8 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 
 	// Create MVP matrix
 	auto M = m.get_transform().get_transform_matrix();
-	auto V = freeCam.get_view();
-	auto P = freeCam.get_projection();
+	auto V = activeCam->get_view();
+	auto P = activeCam->get_projection();
 	auto MVP = P * V * M;
 	// Set MVP matrix uniform
 	glUniformMatrix4fv(eff.get_uniform_location("MVP"),
@@ -521,9 +491,9 @@ void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, eff
 	
 	renderer::bind(eff);
 
-	auto V = freeCam.get_view();
+	auto V = activeCam->get_view();
 	glUniformMatrix4fv(eff.get_uniform_location("view"), 1, GL_FALSE, value_ptr(V));
-	auto P = freeCam.get_projection();
+	auto P = activeCam->get_projection();
 	glUniformMatrix4fv(eff.get_uniform_location("projection"), 1, GL_FALSE, value_ptr(P));
 
 	setupGeneralBindings(model, "crystal", eff);
@@ -532,12 +502,10 @@ void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, eff
 
 bool render() {
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Render skybox
 	renderSkybox();
-	renderFloatingDebris(crystal, rotatingFloaterNumCrystal, crystalRotatingDebris, rotatingDebrisEffect);
-	renderFloatingDebris(asteroidCrystal, rotatingFloaterNumAstCrystal, asteroidCrystalRotatingDebris, rotatingDebrisEffect);
 	renderFloatingDebris(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, rotatingDebrisEffect);
 
 	// Render meshes

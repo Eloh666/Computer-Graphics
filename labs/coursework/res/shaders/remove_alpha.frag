@@ -61,7 +61,7 @@ vec4 removeAlpha(in vec4 tex_colour, in sampler2D blendMap, in vec2 tex_coord);
 // Directional light information
 uniform directional_light light;
 // Point lights being used in the scene
-uniform point_light points[5];
+uniform point_light points[6];
 // Spot lights being used in the scene
 uniform spot_light spots[5];
 // Material of the object being rendered

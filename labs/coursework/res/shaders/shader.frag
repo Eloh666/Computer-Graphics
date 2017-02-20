@@ -60,7 +60,7 @@ vec4 calculate_spot(in spot_light spot, in material mat, in vec3 position, in ve
 // Directional light information
 uniform directional_light light;
 // Point lights being used in the scene
-uniform point_light points[5];
+uniform point_light points[6];
 // Spot lights being used in the scene
 uniform spot_light spots[5];
 // Material of the object being rendered

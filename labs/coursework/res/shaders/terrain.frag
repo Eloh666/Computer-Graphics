@@ -62,7 +62,7 @@ vec3 calc_normal(in vec3 normal, in vec3 tangent, in vec3 binormal, in vec4 weig
 // Directional light information
 uniform directional_light light;
 // Point lights being used in the scene
-uniform point_light points[5];
+uniform point_light points[6];
 // Spot lights being used in the scene
 uniform spot_light spots[5];
 // Material of the object being rendered
