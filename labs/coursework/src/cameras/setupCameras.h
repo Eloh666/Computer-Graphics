@@ -15,12 +15,12 @@ void setupFreeCam(free_camera &freeCam)
 	freeCam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, viewPortSize);
 }
 
-void setupChaseCamera(chase_camera camera, mesh modelToFollow)
+void setupChaseCamera(chase_camera &camera, mesh modelToFollow)
 {
-	camera.set_pos_offset(vec3(0.0f, 2.0f, 10.0f));
-	camera.set_springiness(0.5f);
+	camera.set_pos_offset(vec3(0.0f, 2.0f, 50.0f));
+	camera.set_springiness(0.3f);
 	camera.move(modelToFollow.get_transform().position, eulerAngles(modelToFollow.get_transform().orientation));
-	camera.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, 1000.0f);
+	camera.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, viewPortSize);
 
 }
 
@@ -85,6 +85,26 @@ void handleFreeCameraMovement(free_camera &freeCam, float delta_time, vec3 &tran
 	// Move camera
 	freeCam.move(translation);
 	// Update cursor pos
+	cursor_x = current_x;
+	cursor_y = current_y;
+}
+
+void handleChaseCameraMovement(chase_camera &camera, float delta_time, mesh modelToFollow)
+{
+	static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
+	static double ratio_height =
+		(quarter_pi<float>() * renderer::get_screen_aspect()) / static_cast<float>(renderer::get_screen_height());
+	static double cursor_x = 0.0;
+	static double cursor_y = 0.0;
+	double current_x;
+	double current_y;
+	glfwGetCursorPos(renderer::get_window(), &current_x, &current_y);
+	auto x = (current_x - cursor_x) * ratio_width * delta_time;
+	auto y = -(current_y - cursor_y) * ratio_height * delta_time;
+
+	camera.rotate(vec3(x, y, 0));
+	camera.move(modelToFollow.get_transform().position , eulerAngles(modelToFollow.get_transform().orientation));
+
 	cursor_x = current_x;
 	cursor_y = current_y;
 }

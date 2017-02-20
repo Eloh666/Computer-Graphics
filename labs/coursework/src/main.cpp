@@ -68,7 +68,7 @@ cubemap cube_map;
 vec3 gemPosition;
 float rotationAngle;
 
-const int rotatingFloaterNumDebris = 500;
+const int rotatingFloaterNumDebris = 1500;
 
 vector<mat4> generalDebrisOriginalTransforms(rotatingFloaterNumDebris);
 vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
@@ -148,7 +148,7 @@ bool load_content() {
 	meshes["amillary"] = createAmillaryMesh();
 	textures["amillary"] = texture("textures/metal.jpg", false, true);
 	normal_maps["amillary"] = texture("textures/metalNorm.jpg", false, true);
-	effects["amillary"] = createMultiLightEffect();
+	effects["amillary"] = createNormalMapEffect();
 
 	// Generates the mossyRock and loads its textures
 	meshes["mossyRock"] = createMossyRockMesh();
@@ -169,8 +169,8 @@ bool load_content() {
 
 	textures["crystal"] = texture("textures/crystalDiffuse.jpg", false, true);
 	normal_maps["crystal"] = texture("textures/chrystalNormal.png", false, true);
-	gemPosition = vec3(150, 230, 210);
-	createSpheresTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.05f);
+	gemPosition = meshes["guardian"].get_transform().position + vec3(0, 35, 0);
+	createSpheresTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.2f);
 	for (auto i = 0; i < rotatingFloaterNumDebris; i++)
 	{
 		generalDebrisRotatingDebris[i] = generalDebrisOriginalTransforms[i];
@@ -187,7 +187,7 @@ bool load_content() {
 	textures["stoneSword"] = texture("textures/statueStone.jpg", false, true);
 	normal_maps["stoneSword"] = texture("textures/bladeNorms.tga", false, true);
 	effects["stoneSword"] = createNormalMapEffect();
-	
+
 	meshes["deadTree"] = createDeadTreeMesh();
 	textures["deadTree"] = texture("textures/deadTree.jpg", false, true);
 	normal_maps["deadTree"] = texture("textures/deadTreeNorm.jpg", false, true);
@@ -205,9 +205,10 @@ bool load_content() {
 
 	setupFreeCam(freeCam);
 	setupTargetCameras(targetCameras, meshes);
+	setupChaseCamera(chaseCamera, meshes["amillary"]);
 	activeCam = &freeCam;
 
-	
+
 	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	return true;
 }
@@ -301,10 +302,14 @@ bool update(float delta_time) {
 	}
 
 	// handles free camera movement if active
-	if(activeCam == &freeCam)
+	if (activeCam == &freeCam)
 	{
 		freeCam.set_target(activeCam->get_target());
 		handleFreeCameraMovement(freeCam, delta_time, translation);
+	}
+	if (activeCam == &chaseCamera)
+	{
+		handleChaseCameraMovement(chaseCamera, delta_time, meshes["amillary"]);
 	}
 
 	// Update the camera
@@ -312,20 +317,21 @@ bool update(float delta_time) {
 
 
 	// Rotates the amillary around the statue
-	float amillaryRotation = rotationAngle * 0.001f;
-	auto rotationPosition = vec3(cos(rotationAngle * 0.5f)*140.0f, 0, sin(rotationAngle * 0.5f)*140.0f);
+	float amillaryRotation = sin(rotationAngle) * 0.01f;
+	auto rotationPosition = vec3(cos(rotationAngle * 0.35f)*155.0f, 0, sin(rotationAngle * 0.35f)*155.0f);
 
 
 	meshes["amillary"].get_transform().rotate(vec3(amillaryRotation, amillaryRotation, amillaryRotation));
-	meshes["amillary"].get_transform().position = rotationPosition + gemPosition + vec3(0, 25, 0);
+	meshes["amillary"].get_transform().position = rotationPosition + gemPosition;
 	points[5].set_position(meshes["amillary"].get_transform().position);
 
 	// Debris cloud
 	// Small floaters
-	rotationPosition = vec3(cos(rotationAngle)*5.0f, -50, sin(rotationAngle)*5.0f);
+	rotationPosition = vec3(cos(rotationAngle)*15.0f, 0, sin(rotationAngle)*15.0f);
 	for (int i = 0; i < rotatingFloaterNumDebris; i++)
 	{
-		generalDebrisRotatingDebris[i] = translate(generalDebrisOriginalTransforms[i], rotationPosition  + meshes["amillary"].get_transform().position);
+		float diff = -1 * ((i % 2) + 1);
+		generalDebrisRotatingDebris[i] = translate(generalDebrisOriginalTransforms[i], rotationPosition * diff);
 	}
 	rotationAngle -= 1.0 * delta_time;
 
@@ -488,7 +494,7 @@ void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, eff
 	glBindVertexArray(VAO);
 
 	// sets up the other thingies
-	
+
 	renderer::bind(eff);
 
 	auto V = activeCam->get_view();

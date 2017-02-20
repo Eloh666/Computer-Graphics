@@ -14,7 +14,7 @@ mesh createAmillaryMesh()
 	statue.get_transform().scale = vec3(0.75, 0.75, 0.75);
 	statue.get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	statue.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	statue.get_material().set_shininess(65.0f);
+	statue.get_material().set_shininess(100.0f);
 
 	return statue;
 }
