@@ -176,7 +176,7 @@ bool render() {
     glUniformMatrix3fv(main_eff.get_uniform_location("N"), 1, GL_FALSE,
                        value_ptr(m.get_transform().get_normal_matrix()));
     // *********************************
-	auto lightMVP = M * shadow.get_view() * cam.get_projection();
+	auto lightMVP = LightProjectionMat * shadow.get_view() * M;
     // Set light transform
 	glUniformMatrix4fv(main_eff.get_uniform_location("lightMVP"),
 		1,
