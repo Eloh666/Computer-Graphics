@@ -45,6 +45,7 @@ chase_camera chaseCamera;
 map<string, mesh> meshes;
 
 mesh violet;
+mesh trees;
 mesh skybox;
 mesh crystal;
 mesh asteroidCrystal;
@@ -55,6 +56,7 @@ map<string, effect> effects;
 
 effect skyboxEffect;
 effect violetEffect;
+effect treeEffect;
 effect rotatingDebrisEffect;
 
 // textures
@@ -134,10 +136,16 @@ bool load_content() {
 	effects["grave"] = createMultiLightEffect();
 
 	// Generates the statue and loads its textures
-	violet = createTreeMesh();
+	violet = createVioletTreeMesh();
 	textures["violet"] = texture("textures/violet.png", false, true);
 	alpha_maps["violet"] = texture("textures/violet_a.jpg", false, true);
 	violetEffect = createMultiLightRemoveAlphaEffect();
+
+	trees = createTreeMesh();
+	textures["tree"] = texture("textures/treeDiff.tga", false, true);
+	alpha_maps["tree"] = texture("textures/treeAlpha.tga", false, true);
+	normal_maps["tree"] = texture("textures/treeNorm.tga", false, true);
+	treeEffect = createMultiLightRemoveAlphaEffect();
 
 	// Generates the katana and loads its textures
 	meshes["katana"] = createKatanaMesh();
@@ -522,6 +530,7 @@ bool render() {
 		renderMesh(m, meshName, eff);
 	}
 	renderMesh(violet, "violet", violetEffect);
+	renderMesh(trees, "tree", treeEffect);
 	return true;
 }
 
