@@ -24,11 +24,13 @@ bool load_content() {
   // Create "teapot" mesh by loading in models/teapot.obj
   meshes["teapot"] = mesh(geometry("models/teapot.obj"));
 
+  // Translate Teapot(0,4,0)
+
   // Scale the teapot - (0.1, 0.1, 0.1)
   meshes["teapot"].get_transform().scale = vec3(0.1, 0.1, 0.1);
 
   // Load texture
-  tex = texture("textures/checker.png");
+  tex = texture("textures/checked.gif");
 
   // ***********************
   // Set materials
@@ -43,7 +45,7 @@ bool load_content() {
   meshes["plane"].get_material().set_shininess(25.0f);
   // Red teapot
   meshes["teapot"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
-  meshes["teapot"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  meshes["teapot"].get_material().set_diffuse(vec4(1.0f, 0.0f, 0.0f, 1.0f));
   meshes["teapot"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["teapot"].get_material().set_shininess(25.0f);
 
@@ -55,8 +57,13 @@ bool load_content() {
   // 50 range, 10 power
   spot.set_position(vec3(20, 30, 0));
   spot.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+<<<<<<<
   spot.set_direction(normalize(vec3(-1.0f, -1.0f, 0.0f)));
   spot.set_range(50.0f);
+=======
+  spot.set_direction(normalize(-spot.get_position()));
+  spot.set_range(500.0f);
+>>>>>>>
   spot.set_power(10.0f);
 
   // Load in shaders
@@ -82,18 +89,40 @@ bool update(float delta_time) {
   // Rotate the teapot
   meshes["teapot"].get_transform().rotate(vec3(0.0f, half_pi<float>(), 0.0f) * delta_time);
 
+  if (glfwGetKey(renderer::get_window(), '1')) {
+    cam.set_position(vec3(0.0f, 50.0f, -75.0f));
+  }
+  if (glfwGetKey(renderer::get_window(), '2')) {
+    cam.set_position(spot.get_position());
+  }
+  if (glfwGetKey(renderer::get_window(), '3')) {
+    cam.set_position(vec3(-25.0, 50.0, 0.0));
+  }
+  if (glfwGetKey(renderer::get_window(), '4')) {
+    cam.set_position(vec3(-50, 2.0, 0));
+  }
+  cam.update(delta_time);
+
   // *********************************
+<<<<<<<
   // Update the shadow map properties from the spot light
   shadow.light_position = spot.get_position();
   shadow.light_dir = spot.get_direction();
+=======
+  // Update the shadow map light_position from the spot light
+>>>>>>>
 
+<<<<<<<
+
+=======
+  // do the same for light_dir property
+
+>>>>>>>
   // *********************************
 
   // Press s to save
   if (glfwGetKey(renderer::get_window(), 'S') == GLFW_PRESS)
     shadow.buffer->save("test.png");
-
-  cam.update(delta_time);
 
   return true;
 }
@@ -103,14 +132,24 @@ bool render() {
   // Set render target to shadow map
 	renderer::set_render_target(shadow);
   // Clear depth buffer bit
+<<<<<<<
 	glClear(GL_DEPTH_BUFFER_BIT);
   // Set render mode to cull face
 	glCullFace(GL_FRONT);
+=======
+
+  // Set face cull mode to front
+
+>>>>>>>
   // *********************************
+
+  // We could just use the Camera's projection, 
+  // but that has a narrower FoV than the cone of the spot light, so we would get clipping.
+  // so we have yo create a new Proj Mat with a field of view of 90.
+  mat4 LightProjectionMat = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 1000.f);
 
   // Bind shader
   renderer::bind(shadow_eff);
-
   // Render meshes
   for (auto &e : meshes) {
     auto m = e.second;
@@ -120,9 +159,7 @@ bool render() {
     // View matrix taken from shadow map
 	auto V = shadow.get_view();
     // *********************************
-
-    auto P = cam.get_projection();
-    auto MVP = P * V * M;
+    auto MVP = LightProjectionMat * V * M;
     // Set MVP matrix uniform
     glUniformMatrix4fv(shadow_eff.get_uniform_location("MVP"), // Location of uniform
                        1,                                      // Number of values - 1 mat4
@@ -133,9 +170,15 @@ bool render() {
   }
   // *********************************
   // Set render target back to the screen
+<<<<<<<
   renderer::set_render_target();
   // Set cull face to back
   glCullFace(GL_BACK);
+=======
+
+  // Set face cull mode to back
+
+>>>>>>>
   // *********************************
 
   // Bind shader
@@ -160,18 +203,37 @@ bool render() {
     glUniformMatrix3fv(main_eff.get_uniform_location("N"), 1, GL_FALSE,
                        value_ptr(m.get_transform().get_normal_matrix()));
     // *********************************
+<<<<<<<
 	auto lightMVP = M * shadow.get_view() * cam.get_projection();
     // Set light transform
 	glUniformMatrix4fv(main_eff.get_uniform_location("lightMVP"),
 		1,
 		GL_FALSE,
 		value_ptr(lightMVP));
+=======
+    // Set lightMVP uniform, using:
+     //Model matrix from m
+>>>>>>>
 
+<<<<<<<
+
+=======
+    // viewmatrix from the shadow map
+
+    // Multiply together with LightProjectionMat
+
+    // Set uniform
+
+>>>>>>>
     // Bind material
 	renderer::bind(m.get_material(), "mat");
 
+<<<<<<<
     // Bind spot lights
 	renderer::bind(spot, "spot");
+=======
+    // Bind spot light
+>>>>>>>
 
 	// Bind texture
 	renderer::bind(tex, 0);
@@ -190,6 +252,12 @@ bool render() {
 	renderer::bind(shadow.buffer->get_depth(), 1);
 	glUniform1i(main_eff.get_uniform_location("shadow_map"), 1);
 
+<<<<<<<
+
+=======
+    // Set the shadow_map uniform
+
+>>>>>>>
     // Render mesh
 	renderer::render(m);
     // *********************************
