@@ -23,6 +23,7 @@
 #include "lights/setupLights.h"
 #include "cameras/setupCameras.h"
 #include "meshes/amillaryMesh.h"
+#include "shadows/setupShadows.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -30,6 +31,8 @@ using namespace glm;
 
 
 // lights
+// note: directional light works, but is currently disabled in the shaders
+// ...I dont like the look of it
 directional_light light;
 vector<point_light> points(6);
 vector<spot_light> spots(5);
@@ -64,6 +67,10 @@ map<string, texture> textures;
 map<string, texture> normal_maps;
 map<string, texture> alpha_maps;
 cubemap cube_map;
+
+// shadows - for the first part of the coursework, only spotlight will be taken in cosideration
+vector<shadow_map> shadows(spots.size());
+effect shadowEffect;
 
 // transforms and indeces for the debris ring
 
@@ -176,7 +183,7 @@ bool load_content() {
 	generalDebris = mesh(geometry("models/rock.obj"));
 
 	textures["crystal"] = texture("textures/crystalDiffuse.jpg", false, true);
-	normal_maps["crystal"] = texture("textures/chrystalNormal.png", false, true);
+	normal_maps["crystal"] = texture("textures/crystalNorm.jpg", false, true);
 	gemPosition = meshes["guardian"].get_transform().position + vec3(0, 35, 0);
 	createSpheresTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.2f);
 	for (auto i = 0; i < rotatingFloaterNumDebris; i++)
@@ -226,7 +233,8 @@ bool update(float delta_time) {
 	// updates the water delta vector to mimick the movement
 	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
 
-
+	// updates the status of the shadow_maps based on the position of spotlights
+	updateShadowPostions(shadows, spots);
 
 	// The ratio of pixels to rotation - remember the fov
 	// Use keyboard to move the camera - WASD
@@ -376,8 +384,21 @@ void renderSkybox()
 	glEnable(GL_DEPTH_TEST);
 }
 
-void setupGeneralBindings(mesh &m, string meshName, effect &eff)
+void bindShadows()
 {
+	for (auto i = 0; i < shadows.size(); ++i)
+	{
+		auto offsetLocation = 15;
+		renderer::bind(shadows[i].buffer->get_depth(), offsetLocation + i);
+		string locationToBind = "shadowMaps[%]";
+		locationToBind += '1';
+	}
+}
+
+void setupGeneralBindings(mesh &m, string meshName, effect &eff, vector<mat4> lightMVPs = vector<mat4>(0))
+{
+	bindShadows();
+
 	// Sets uniform for water movement
 	if (meshName == "waterBase")
 	{
@@ -468,7 +489,41 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 		);
 }
 
-void renderMesh(mesh &m, string meshName, effect &eff)
+void renderShadows(mat4 LightProjectionMat)
+{
+	for (auto i = 0; i < shadows.size(); ++i)
+	{
+		// Set render target to shadow map
+		renderer::set_render_target(shadows[i]);
+		// Clear depth buffer bit
+		glClear(GL_DEPTH_BUFFER_BIT);
+		// Set render mode to cull face
+		glCullFace(GL_FRONT);
+
+		// Bind shader
+		renderer::bind(shadowEffect);
+		// Render meshes
+		for (auto &e : meshes) {
+			auto m = e.second;
+			// Create MVP matrix
+			auto M = m.get_transform().get_transform_matrix();
+			// *********************************
+			// View matrix taken from shadow map
+			auto V = shadows[i].get_view();
+			// *********************************
+			auto MVP = LightProjectionMat * V * M;
+			// Set MVP matrix uniform
+			glUniformMatrix4fv(shadowEffect.get_uniform_location("MVP"), // Location of uniform
+				1,                                      // Number of values - 1 mat4
+				GL_FALSE,                               // Transpose the matrix?
+				value_ptr(MVP));                        // Pointer to matrix data
+														// Render mesh
+			renderer::render(m);
+		}
+	}
+}
+
+void renderMesh(mesh &m, string meshName, effect &eff, vector<mat4> lightMVPs = vector<mat4>(0))
 {
 	renderer::bind(eff);
 
@@ -484,7 +539,8 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 		value_ptr(MVP));
 	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 
-	setupGeneralBindings(m, meshName, eff);
+
+	setupGeneralBindings(m, meshName, eff, lightMVPs);
 
 	// Render mesh
 	renderer::render(m);
@@ -515,8 +571,11 @@ void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, eff
 }
 
 bool render() {
-
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	// sets up the light project matrix
+	mat4 LightProjectionMat = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 1000.f);
+	// renders shadows
+	renderShadows(LightProjectionMat);
 
 	// Render skybox
 	renderSkybox();
@@ -527,7 +586,8 @@ bool render() {
 		auto m = e.second;
 		auto meshName = e.first;
 		effect eff = effects[meshName];
-		renderMesh(m, meshName, eff);
+		auto lightMVPs = getLightProjectionMatrices(shadows, LightProjectionMat, m.get_transform().get_transform_matrix());
+		renderMesh(m, meshName, eff, lightMVPs);
 	}
 	renderMesh(violet, "violet", violetEffect);
 	renderMesh(trees, "tree", treeEffect);
