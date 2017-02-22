@@ -157,7 +157,9 @@ bool load_content() {
 	// Generates the katana and loads its textures
 	meshes["katana"] = createKatanaMesh();
 	textures["katana"] = texture("textures/katDiffuse.tga", false, true);
+	//normal_maps["katana"] = texture("textures/katNorm.tga", false, true);
 	effects["katana"] = createMultiLightEffect();
+	//effects["katana"] = createNormalMapEffect();
 
 	// Generates the basic rock and loads its textures
 	meshes["amillary"] = createAmillaryMesh();
@@ -223,6 +225,12 @@ bool load_content() {
 	setupChaseCamera(chaseCamera, meshes["amillary"]);
 	activeCam = &freeCam;
 
+	// setup shadows and shadow effect
+	for(auto &shadow : shadows)
+	{
+		shadow = shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
+	}
+	shadowEffect = createShadowEffect();
 
 	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	return true;
@@ -384,20 +392,27 @@ void renderSkybox()
 	glEnable(GL_DEPTH_TEST);
 }
 
-void bindShadows()
+void bindShadows(effect &eff, vector<mat4> lightMVPs)
 {
 	for (auto i = 0; i < shadows.size(); ++i)
 	{
 		auto offsetLocation = 15;
 		renderer::bind(shadows[i].buffer->get_depth(), offsetLocation + i);
-		string locationToBind = "shadowMaps[%]";
-		locationToBind += '1';
+		string shadowMapsToBind = "shadow_maps[" + i + ']';
+		string lightMVPToBind = "lightMVPs[" + i + ']';
+		glUniform1i(eff.get_uniform_location(shadowMapsToBind), i);
 	}
+	for (auto i = 0; i < lightMVPs.size(); ++i)
+	{
+		string lightMVPToBind = "lightMVPs[" + i + ']';
+		glUniformMatrix4fv(shadowEffect.get_uniform_location(lightMVPToBind), 1, GL_FALSE, value_ptr(lightMVPs[i]));
+	}
+	
 }
 
 void setupGeneralBindings(mesh &m, string meshName, effect &eff, vector<mat4> lightMVPs = vector<mat4>(0))
 {
-	bindShadows();
+	bindShadows(eff, lightMVPs);
 
 	// Sets uniform for water movement
 	if (meshName == "waterBase")
@@ -489,17 +504,12 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff, vector<mat4> li
 		);
 }
 
-void renderShadows(mat4 LightProjectionMat)
+void renderShadows(mat4 lightProjectionMat)
 {
 	for (auto i = 0; i < shadows.size(); ++i)
 	{
 		// Set render target to shadow map
 		renderer::set_render_target(shadows[i]);
-		// Clear depth buffer bit
-		glClear(GL_DEPTH_BUFFER_BIT);
-		// Set render mode to cull face
-		glCullFace(GL_FRONT);
-
 		// Bind shader
 		renderer::bind(shadowEffect);
 		// Render meshes
@@ -511,7 +521,7 @@ void renderShadows(mat4 LightProjectionMat)
 			// View matrix taken from shadow map
 			auto V = shadows[i].get_view();
 			// *********************************
-			auto MVP = LightProjectionMat * V * M;
+			auto MVP = lightProjectionMat * V * M;
 			// Set MVP matrix uniform
 			glUniformMatrix4fv(shadowEffect.get_uniform_location("MVP"), // Location of uniform
 				1,                                      // Number of values - 1 mat4
@@ -571,12 +581,18 @@ void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, eff
 }
 
 bool render() {
-	
+	// Clear depth buffer bit
+	glClear(GL_DEPTH_BUFFER_BIT);
+	// Set render mode to cull face
+	glCullFace(GL_FRONT);
 	// sets up the light project matrix
-	mat4 LightProjectionMat = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 1000.f);
+	mat4 lightProjectionMat = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
 	// renders shadows
-	renderShadows(LightProjectionMat);
-
+	renderShadows(lightProjectionMat);
+	// returns to backface culling
+	glCullFace(GL_BACK);
+	// Set render target back to the screen
+	renderer::set_render_target();
 	// Render skybox
 	renderSkybox();
 	renderFloatingDebris(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, rotatingDebrisEffect);
@@ -586,7 +602,7 @@ bool render() {
 		auto m = e.second;
 		auto meshName = e.first;
 		effect eff = effects[meshName];
-		auto lightMVPs = getLightProjectionMatrices(shadows, LightProjectionMat, m.get_transform().get_transform_matrix());
+		auto lightMVPs = getLightProjectionMatrices(shadows, lightProjectionMat, m.get_transform().get_transform_matrix());
 		renderMesh(m, meshName, eff, lightMVPs);
 	}
 	renderMesh(violet, "violet", violetEffect);

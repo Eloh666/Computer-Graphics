@@ -9,8 +9,8 @@ effect createShadowEffect()
 {
 
 	effect eff;
-	eff.add_shader("shaders/basic_spotLight.vert", GL_VERTEX_SHADER);
-	eff.add_shader("shaders/basic_spotLight.frag", GL_FRAGMENT_SHADER);
+	eff.add_shader("shaders/base_shader.vert", GL_VERTEX_SHADER);
+	eff.add_shader("shaders/base_shader.frag", GL_FRAGMENT_SHADER);
 	eff.build();
 	return eff;
 }
