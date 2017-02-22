@@ -56,6 +56,7 @@ vec4 calculate_point(in point_light point, in material mat, in vec3 position, in
 vec4 calculate_spot(in spot_light spot, in material mat, in vec3 position, in vec3 normal, in vec3 view_dir,
                     in vec4 tex_colour);
 vec3 calc_normal(in vec3 normal, in vec3 tangent, in vec3 binormal, in sampler2D normal_map, in vec2 tex_coord);
+float calculate_shadow(in sampler2D shadow_map, in vec4 light_space_pos);
 
 // Direction light being used in the scene
 uniform directional_light light;
@@ -71,6 +72,8 @@ uniform vec3 eye_pos;
 uniform sampler2D tex;
 // Normal map to sample from
 uniform sampler2D normal_map;
+// Shadow map to sample from
+uniform sampler2D shadow_map;
 
 // Incoming vertex position
 layout(location = 0) in vec3 position;
@@ -82,6 +85,8 @@ layout(location = 2) in vec3 normal;
 layout(location = 3) in vec3 tangent;
 // Incoming binormal
 layout(location = 4) in vec3 binormal;
+// Incoming light space position
+layout(location = 9) in vec4 light_space_pos;
 
 // Outgoing colour
 layout(location = 0) out vec4 colour;
@@ -107,6 +112,8 @@ void main() {
 	colour += calculate_spot(spots[i], mat, position, normalMap, view_dir, tex_colour);
   }
 
+  float shadeFactor = calculate_shadow(shadow_map, light_space_pos);
+  colour = colour * shadeFactor;
   colour.a = 1.0;
 
   // *********************************

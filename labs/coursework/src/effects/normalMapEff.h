@@ -16,6 +16,7 @@ effect createNormalMapEffect()
 	eff.add_shader("shaders/part_normal_map.frag", GL_FRAGMENT_SHADER);
 	eff.add_shader("shaders/part_point.frag", GL_FRAGMENT_SHADER);
 	eff.add_shader("shaders/part_spot.frag", GL_FRAGMENT_SHADER);
+	eff.add_shader("shaders/part_shadow.frag", GL_FRAGMENT_SHADER);
 	eff.build();
 	return eff;
 }

@@ -44,7 +44,6 @@ chase_camera chaseCamera;
 // meshes
 map<string, mesh> meshes;
 
-mesh violet;
 mesh trees;
 mesh skybox;
 mesh crystal;
@@ -55,7 +54,6 @@ mesh generalDebris;
 map<string, effect> effects;
 
 effect skyboxEffect;
-effect violetEffect;
 effect treeEffect;
 effect rotatingDebrisEffect;
 
@@ -76,10 +74,17 @@ vector<mat4> generalDebrisOriginalTransforms(rotatingFloaterNumDebris);
 vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
 
 // water flowing delta
-
 vec2 waterDelta;
 
+// shadows
+shadow_map shadow;
+effect shadowEff;
+
 bool load_content() {
+
+	// Create shadow map- use screen size
+	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
+	shadowEff = createMultiLightEffect();
 
 	// Generates the terrain and loads its textures
 	auto width = 30;
@@ -136,10 +141,10 @@ bool load_content() {
 	effects["grave"] = createMultiLightEffect();
 
 	// Generates the statue and loads its textures
-	violet = createVioletTreeMesh();
+	meshes["violet"] = createVioletTreeMesh();
 	textures["violet"] = texture("textures/violet.png", false, true);
 	alpha_maps["violet"] = texture("textures/violet_a.jpg", false, true);
-	violetEffect = createMultiLightRemoveAlphaEffect();
+	effects["violet"] = createMultiLightRemoveAlphaEffect();
 
 	trees = createTreeMesh();
 	textures["tree"] = texture("textures/treeDiff.tga", false, true);
@@ -226,7 +231,9 @@ bool update(float delta_time) {
 	// updates the water delta vector to mimick the movement
 	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
 
-
+	// updates the projection of the light
+	shadow.light_position = spots[1].get_position();
+	shadow.light_dir = spots[1].get_direction();
 
 	// The ratio of pixels to rotation - remember the fov
 	// Use keyboard to move the camera - WASD
@@ -461,14 +468,20 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 		// Set tex uniform
 		glUniform1i(eff.get_uniform_location("tex"), 0);
 	}
+
+	// Bind eye position
 	glUniform3fv(
 		eff.get_uniform_location("eye_pos"),
 		1,
 		value_ptr(activeCam->get_position())
 		);
+
+	// Bind shadow map texture - using available index
+	renderer::bind(shadow.buffer->get_depth(), 15);
+	glUniform1i(eff.get_uniform_location("shadow_map"), 15);
 }
 
-void renderMesh(mesh &m, string meshName, effect &eff)
+void renderMesh(mesh &m, string meshName, effect &eff, mat4 lightProjectionMatrix)
 {
 	renderer::bind(eff);
 
@@ -484,13 +497,20 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 		value_ptr(MVP));
 	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 
+	auto lightMVP = lightProjectionMatrix * shadow.get_view() * M;
+	// Set light transform
+	glUniformMatrix4fv(eff.get_uniform_location("lightMVP"),
+		1,
+		GL_FALSE,
+		value_ptr(lightMVP));
+
 	setupGeneralBindings(m, meshName, eff);
 
 	// Render mesh
 	renderer::render(m);
 }
 
-void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, effect eff)
+void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, effect eff, mat4 lightProjectionMatrix)
 {
 	// sets up the buffer
 	GLuint buffer;
@@ -510,27 +530,72 @@ void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, eff
 	auto P = activeCam->get_projection();
 	glUniformMatrix4fv(eff.get_uniform_location("projection"), 1, GL_FALSE, value_ptr(P));
 
+	auto lightMVPPartial = lightProjectionMatrix * shadow.get_view();
+	// Set light transform
+	glUniformMatrix4fv(eff.get_uniform_location("lightMVPPartial"),
+		1,
+		GL_FALSE,
+		value_ptr(lightMVPPartial));
+
 	setupGeneralBindings(model, "crystal", eff);
 	renderer::render_instancieted(model, amount);
 }
 
+void renderShadows(mat4 lightProjectionMatrix)
+{
+	// Set render target to shadow map
+	renderer::set_render_target(shadow);
+	// Clear depth buffer bit
+	glClear(GL_DEPTH_BUFFER_BIT);
+	// Set render mode to cull face
+	glCullFace(GL_FRONT);
+	
+
+	// Bind shader
+	renderer::bind(shadowEff);
+	// Render meshes
+	for (auto &e : meshes) {
+		auto m = e.second;
+		// Create MVP matrix
+		auto M = m.get_transform().get_transform_matrix();
+		// *********************************
+		// View matrix taken from shadow map
+		auto V = shadow.get_view();
+		// *********************************
+		auto MVP = lightProjectionMatrix * V * M;
+		// Set MVP matrix uniform
+		glUniformMatrix4fv(shadowEff.get_uniform_location("MVP"), // Location of uniform
+			1,                                      // Number of values - 1 mat4
+			GL_FALSE,                               // Transpose the matrix?
+			value_ptr(MVP));                        // Pointer to matrix data
+													// Render mesh
+		renderer::render(m);
+	}
+	// Set render target back to the screen
+	renderer::set_render_target();
+	// Set cull face to back
+	glCullFace(GL_BACK);
+}
+
 bool render() {
 
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
 
+	// Render Shadows
+	renderShadows(lightProjectionMatrix);
 	// Render skybox
 	renderSkybox();
-	renderFloatingDebris(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, rotatingDebrisEffect);
 
 	// Render meshes
 	for (auto &e : meshes) {
 		auto m = e.second;
 		auto meshName = e.first;
 		effect eff = effects[meshName];
-		renderMesh(m, meshName, eff);
+		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
-	renderMesh(violet, "violet", violetEffect);
-	renderMesh(trees, "tree", treeEffect);
+
+	renderFloatingDebris(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, rotatingDebrisEffect, lightProjectionMatrix);
+	//renderMesh(trees, "tree", treeEffect);
 	return true;
 }
 

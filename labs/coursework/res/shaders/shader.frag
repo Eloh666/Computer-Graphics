@@ -56,6 +56,7 @@ vec4 calculate_point(in point_light point, in material mat, in vec3 position, in
                      in vec4 tex_colour);
 vec4 calculate_spot(in spot_light spot, in material mat, in vec3 position, in vec3 normal, in vec3 view_dir,
                     in vec4 tex_colour);
+float calculate_shadow(in sampler2D shadow_map, in vec4 light_space_pos);
 
 // Directional light information
 uniform directional_light light;
@@ -69,6 +70,8 @@ uniform material mat;
 uniform vec3 eye_pos;
 // Texture to sample from
 uniform sampler2D tex;
+// Shadow map to sample from
+uniform sampler2D shadow_map;
 
 // Incoming position
 layout(location = 0) in vec3 position;
@@ -76,6 +79,8 @@ layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
 // Incoming texture coordinate
 layout(location = 2) in vec2 tex_coord;
+// Incoming light space position
+layout(location = 9) in vec4 light_space_pos;
 
 // Outgoing colour
 layout(location = 0) out vec4 colour;
@@ -100,6 +105,8 @@ void main() {
 	colour += calculate_spot(spots[i], mat, position, normal, view_dir, tex_colour);
   }
 
+  float shadeFactor = calculate_shadow(shadow_map, light_space_pos);
+  colour = colour * shadeFactor;
   colour.a = 1.0;
 
   // *********************************
