@@ -176,7 +176,7 @@ bool load_content() {
 	generalDebris = mesh(geometry("models/rock.obj"));
 
 	textures["crystal"] = texture("textures/crystalDiffuse.jpg", false, true);
-	normal_maps["crystal"] = texture("textures/chrystalNormal.png", false, true);
+	normal_maps["crystal"] = texture("textures/crystalNorm.jpg", false, true);
 	gemPosition = meshes["guardian"].get_transform().position + vec3(0, 35, 0);
 	createSpheresTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.2f);
 	for (auto i = 0; i < rotatingFloaterNumDebris; i++)
