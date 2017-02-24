@@ -85,9 +85,8 @@ vector<mat4> amillaryTransforms(amillaryRingsNumber);
 
 bool load_content() {
 
-	// amillaryRing
+	// amillary ring
 	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
-	generateAmillaryRings(amillaryTransforms);
 
 	// Generates the terrain and loads its textures
 	auto width = 30;
@@ -351,17 +350,8 @@ bool update(float delta_time) {
 	}
 	rotationAngle -= 1.0 * delta_time;
 
-	// Rotates amillary rings
-	amillaryTransforms[0] = rotate(	amillaryTransforms[0], 0.025f, vec3(0.0f, 0.0f, -quarter_pi<float>()));
-	amillaryTransforms[1] = rotate(	amillaryTransforms[1], 0.025f, vec3(quarter_pi<float>(), 0.0f, 0.0f));
-	amillaryTransforms[2] = rotate(	amillaryTransforms[2], 0.025f, vec3(-quarter_pi<float>(), 0, quarter_pi<float>()));
-	amillaryTransforms[3] = rotate(	amillaryTransforms[3], 0.025f, vec3(0.0f, 0.0f, -quarter_pi<float>()));
-	amillaryTransforms[4] = rotate(	amillaryTransforms[4], 0.025f, vec3(quarter_pi<float>(), 0.0f, 0.0f));
-	for (auto i = 0; i < amillaryTransforms.size(); i++) {
-		for (auto j = i; j > 0; j--) {
-			amillaryTransforms[i] = amillaryTransforms[j - 1] * amillaryTransforms[i];
-		}
-	}
+	// Setup and rotation for amillary transforms
+	generateAmillaryRings(amillaryTransforms, meshes["amillary"].get_transform().position, rotationAngle);
 
 	return true;
 }
@@ -510,6 +500,7 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 
 void renderingInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name)
 {
+
 	// sets up the buffer
 	GLuint buffer;
 	glGenBuffers(1, &buffer);
