@@ -13,8 +13,8 @@ effect createShadowEffect()
 	//eff.add_shader("shaders/basic_spotLight.frag", GL_FRAGMENT_SHADER);
 	//eff.add_shader("shaders/part_spot.frag", GL_FRAGMENT_SHADER);
 
-	eff.add_shader("shaders/simple_spotLight.vert", GL_VERTEX_SHADER);
-	eff.add_shader("shaders/simple_spotLight.frag", GL_FRAGMENT_SHADER);
+	eff.add_shader("shaders/shadow_map.vert", GL_VERTEX_SHADER);
+	eff.add_shader("shaders/shadow_map.frag", GL_FRAGMENT_SHADER);
 
 	eff.build();
 	return eff;

@@ -23,6 +23,7 @@
 #include "lights/setupLights.h"
 #include "cameras/setupCameras.h"
 #include "meshes/amillaryMesh.h"
+#include "shadows/setupShadows.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -79,12 +80,14 @@ vec2 waterDelta;
 // shadows
 shadow_map shadow;
 effect shadowEff;
+effect generalEffect;
 
 bool load_content() {
 
 	// Create shadow map- use screen size
 	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
 	shadowEff = createMultiLightEffect();
+	generalEffect = createMultiLightEffect();
 
 	// Generates the terrain and loads its textures
 	auto width = 30;
@@ -232,8 +235,8 @@ bool update(float delta_time) {
 	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
 
 	// updates the projection of the light
-	shadow.light_position = spots[1].get_position();
-	shadow.light_dir = spots[1].get_direction();
+	shadow.light_position = spots[3].get_position();
+	shadow.light_dir = spots[3].get_direction();
 
 	// The ratio of pixels to rotation - remember the fov
 	// Use keyboard to move the camera - WASD
