@@ -57,7 +57,7 @@ map<string, effect> effects;
 effect skyboxEffect;
 effect violetEffect;
 effect treeEffect;
-effect rotatingDebrisEffect;
+effect multiIstanceNormalEffect;
 
 // textures
 map<string, texture> textures;
@@ -76,10 +76,18 @@ vector<mat4> generalDebrisOriginalTransforms(rotatingFloaterNumDebris);
 vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
 
 // water flowing delta
-
 vec2 waterDelta;
 
+// floating amillary
+int amillaryRingsNumber = 5;
+mesh amillaryRing;
+vector<mat4> amillaryTransforms(amillaryRingsNumber);
+
 bool load_content() {
+
+	// amillaryRing
+	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
+	generateAmillaryRings(amillaryTransforms);
 
 	// Generates the terrain and loads its textures
 	auto width = 30;
@@ -183,7 +191,7 @@ bool load_content() {
 	{
 		generalDebrisRotatingDebris[i] = generalDebrisOriginalTransforms[i];
 	}
-	rotatingDebrisEffect = createMultiInstanceEffect();
+	multiIstanceNormalEffect = createMultiInstanceEffect();
 
 	// Generates the mossyRock and loads its textures
 	//meshes["ruins"] = createRuinsMesh();
@@ -343,7 +351,17 @@ bool update(float delta_time) {
 	}
 	rotationAngle -= 1.0 * delta_time;
 
-	// *********************************
+	// Rotates amillary rings
+	amillaryTransforms[0] = rotate(	amillaryTransforms[0], 0.025f, vec3(0.0f, 0.0f, -quarter_pi<float>()));
+	amillaryTransforms[1] = rotate(	amillaryTransforms[1], 0.025f, vec3(quarter_pi<float>(), 0.0f, 0.0f));
+	amillaryTransforms[2] = rotate(	amillaryTransforms[2], 0.025f, vec3(-quarter_pi<float>(), 0, quarter_pi<float>()));
+	amillaryTransforms[3] = rotate(	amillaryTransforms[3], 0.025f, vec3(0.0f, 0.0f, -quarter_pi<float>()));
+	amillaryTransforms[4] = rotate(	amillaryTransforms[4], 0.025f, vec3(quarter_pi<float>(), 0.0f, 0.0f));
+	for (auto i = 0; i < amillaryTransforms.size(); i++) {
+		for (auto j = i; j > 0; j--) {
+			amillaryTransforms[i] = amillaryTransforms[j - 1] * amillaryTransforms[i];
+		}
+	}
 
 	return true;
 }
@@ -490,7 +508,7 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 	renderer::render(m);
 }
 
-void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, effect eff)
+void renderingInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name)
 {
 	// sets up the buffer
 	GLuint buffer;
@@ -510,17 +528,16 @@ void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, eff
 	auto P = activeCam->get_projection();
 	glUniformMatrix4fv(eff.get_uniform_location("projection"), 1, GL_FALSE, value_ptr(P));
 
-	setupGeneralBindings(model, "crystal", eff);
+	setupGeneralBindings(model, name, eff);
 	renderer::render_instancieted(model, amount);
 }
 
 bool render() {
 
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	// Render skybox
 	renderSkybox();
-	renderFloatingDebris(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, rotatingDebrisEffect);
+	renderingInstanciatedMesh(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal");
+	renderingInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary");
 
 	// Render meshes
 	for (auto &e : meshes) {

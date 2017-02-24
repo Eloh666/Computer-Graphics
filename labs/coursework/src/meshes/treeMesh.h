@@ -45,3 +45,27 @@ mesh createTreeMesh()
 
 	return tree;
 }
+
+void getTreeLocations(vector<vec3> &modelMatrices)
+{
+	auto locations = vector<vec3>{
+		vec3(295, 66, 89),
+		vec3(278, 62, 102),
+	};
+}
+
+void generateTreesTransforms(vector<mat4> &modelMatrices)
+{
+	auto base = 0.1f;
+	auto ceil = 0.5f;
+	auto scale = base + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (ceil - base)));
+	for (auto &mat : modelMatrices)
+	{
+		// randoms the size of the tree
+		mat = glm::scale(mat, vec3(scale));
+
+		// randoms its spin
+		GLfloat rotAngle = (rand() % 360);
+		mat = glm::rotate(mat, rotAngle, glm::vec3(0, 0.5f,0));
+	}
+}
