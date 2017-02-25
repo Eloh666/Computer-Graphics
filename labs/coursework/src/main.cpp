@@ -39,7 +39,7 @@ vector<spot_light> spots(5);
 // cameras
 free_camera freeCam;
 camera *activeCam;
-vector<target_camera> targetCameras(7);
+vector<target_camera> targetCameras(6);
 chase_camera chaseCamera;
 
 
@@ -50,8 +50,6 @@ mesh violet;
 mesh trees;
 mesh skybox;
 mesh crystal;
-mesh asteroidCrystal;
-mesh generalDebris;
 
 //effects
 map<string, effect> effects;
@@ -72,7 +70,7 @@ cubemap cube_map;
 vec3 gemPosition;
 float rotationAngle;
 
-const int rotatingFloaterNumDebris = 750;
+const int rotatingFloaterNumDebris = 1000;
 
 vector<mat4> generalDebrisOriginalTransforms(rotatingFloaterNumDebris);
 vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
@@ -197,14 +195,12 @@ bool load_content() {
 	effects["guardian"] = createNormalMapEffect();
 
 	// Setup of the floating spheres dataon = 0.0f;
-	crystal = mesh(geometry("models/crystal.obj"));
-	asteroidCrystal = mesh(geometry("models/astCrystal.obj"));
-	generalDebris = mesh(geometry("models/rock.obj"));
+	crystal = mesh(geometry("models/meteor.obj"));
 
 	textures["crystal"] = texture("textures/crystalDiffuse.jpg", false, true);
-	normal_maps["crystal"] = texture("textures/crystalNorm.jpg", false, true);
+	normal_maps["crystal"] = texture("textures/meteorNorm.tga", false, true);
 	gemPosition = meshes["guardian"].get_transform().position + vec3(0, 35, 0);
-	createSpheresTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.2f);
+	createFloatersTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.15f);
 	for (auto i = 0; i < rotatingFloaterNumDebris; i++)
 	{
 		generalDebrisRotatingDebris[i] = generalDebrisOriginalTransforms[i];
@@ -331,8 +327,22 @@ bool update(float delta_time) {
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F6)) {
 		activeCam = &targetCameras[5];
 	}
+
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F7)) {
-		activeCam = &targetCameras[6];
+		points[5].set_light_colour(vec4(0.4, 0.6, 1, 1));
+		meshes["amillary"].get_material().set_emissive(vec4(0.1, 0.95, 0.9, 1));
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F8)) {
+		points[5].set_light_colour(vec4(1, 0.85, 0, 1));
+		meshes["amillary"].get_material().set_emissive(vec4(1, 0.85, 0, 1));
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F9)) {
+		points[5].set_light_colour(vec4(1, 0, 0, 1));
+		meshes["amillary"].get_material().set_emissive(vec4(1, 0, 0, 1));
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F10)) {
+		points[5].set_light_colour(vec4(0, 1, 0, 1));
+		meshes["amillary"].get_material().set_emissive(vec4(0, 1, 0, 1));
 	}
 
 	// handles free camera movement if active
@@ -348,7 +358,6 @@ bool update(float delta_time) {
 
 	// Update the camera
 	activeCam->update(delta_time);
-
 
 	// Rotates the amillary around the statue
 	float amillaryRotation = sin(rotationAngle) * 0.01f;
@@ -546,7 +555,7 @@ bool render() {
 
 	// Render skybox
 	renderSkybox();
-	renderInstanciatedMesh(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal");
+	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal");
 	renderInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary");
 	renderInstanciatedMesh(trees, treesAmount, treeTransforms, treeEffect, "tree");
 
