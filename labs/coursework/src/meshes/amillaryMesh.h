@@ -18,23 +18,31 @@ mesh createAmillaryMesh()
 	return amillaryBody;
 }
 
-void generateAmillaryRings(vector<mat4> &modelMatrices, vec3 corePos, float rotationCoefficient)
+void generateAmillaryRings(vector<mat4> &modelMatrices, mat4 corePos, float rotationCoefficient)
 {
 
 	vector<vec3> rotations{
 		vec3(0.0f, 0.0f, -quarter_pi<float>()),
 		vec3(quarter_pi<float>(), 0.0f, 0.0f),
-		vec3(-quarter_pi<float>(), 0, quarter_pi<float>()),
+		vec3(0.0f, quarter_pi<float>(), 0.0f),
 		vec3(0.0f, 0.0f, -quarter_pi<float>()),
-		vec3(quarter_pi<float>(), 0.0f, 0.0f)
+		vec3(quarter_pi<float>(), 0.0f, 0.0f),
+		vec3(0.0f, -quarter_pi<float>(), 0.0f),
 	};
 
 
 	for (auto i = 0; i < modelMatrices.size(); i++)
 	{
 		mat4 model;
-		modelMatrices[i] = translate(model, corePos);
-		modelMatrices[i] = rotate(modelMatrices[i], rotationCoefficient, rotations[i % 5]);
-		modelMatrices[i] = glm::scale(modelMatrices[i], vec3(0.25, 0.25, 0.25) + vec3(0.45, 0.45, 0.45) * static_cast<float> (i + 1));
+		modelMatrices[i] = model;
+		for (auto j = i; j > 0; j--) {
+			modelMatrices[i] = modelMatrices[j - 1] * modelMatrices[i];
+		}
+		modelMatrices[i] = rotate(modelMatrices[i], rotationCoefficient, rotations[i % 6]);
+	}
+	for (auto i = 0; i < modelMatrices.size(); i++)
+	{
+		modelMatrices[i] = scale(corePos, vec3(7, 7, 7)) * modelMatrices[i];
+		modelMatrices[i] = scale(modelMatrices[i], vec3(0.35f, 0.35f, 0.35f) + vec3(0.35, 0.35, 0.35) * static_cast<float> (i + 1));
 	}
 }

@@ -79,14 +79,21 @@ vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
 vec2 waterDelta;
 
 // floating amillary
-int amillaryRingsNumber = 5;
+int amillaryRingsNumber = 6;
 mesh amillaryRing;
 vector<mat4> amillaryTransforms(amillaryRingsNumber);
+
+// trees
+int treesAmount = 40;
+vector<mat4> treeTransforms(treesAmount);
 
 bool load_content() {
 
 	// amillary ring
 	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
+
+	// tree positions
+	generateTreesTransforms(treeTransforms);
 
 	// Generates the terrain and loads its textures
 	auto width = 30;
@@ -113,7 +120,7 @@ bool load_content() {
 	normal_maps["waterBase"] = texture("textures/waterNormal.jpg", false, true);
 	effects["waterBase"] = createMovingWaterEffect();
 
-	// Generates the night skyboxs
+	// Generates the night skyboxss
 	skybox = createSkybox();
 	array<string, 6> filenames = { "textures/skybox/starfield_ft.tga", "textures/skybox/starfield_bk.tga", "textures/skybox/starfield_up.tga",
 		"textures/skybox/starfield_dn.tga", "textures/skybox/starfield_rt.tga", "textures/skybox/starfield_lf.tga" };
@@ -148,11 +155,11 @@ bool load_content() {
 	alpha_maps["violet"] = texture("textures/violet_a.jpg", false, true);
 	violetEffect = createMultiLightRemoveAlphaEffect();
 
-	trees = createTreeMesh();
+	trees = mesh(geometry("models/tree.obj"));
 	textures["tree"] = texture("textures/treeDiff.tga", false, true);
 	alpha_maps["tree"] = texture("textures/treeAlpha.tga", false, true);
 	normal_maps["tree"] = texture("textures/treeNorm.tga", false, true);
-	treeEffect = createMultiLightRemoveAlphaEffect();
+	//treeEffect = createInstanciatedRemoveAlpha();
 
 	// Generates the katana and loads its textures
 	meshes["katana"] = createKatanaMesh();
@@ -348,10 +355,10 @@ bool update(float delta_time) {
 		float diff = -1 * ((i % 2) + 1);
 		generalDebrisRotatingDebris[i] = translate(generalDebrisOriginalTransforms[i], rotationPosition * diff);
 	}
-	rotationAngle -= 1.0 * delta_time;
+	rotationAngle -= delta_time;
 
 	// Setup and rotation for amillary transforms
-	generateAmillaryRings(amillaryTransforms, meshes["amillary"].get_transform().position, rotationAngle);
+	generateAmillaryRings(amillaryTransforms, meshes["amillary"].get_transform().get_transform_matrix(), rotationAngle * 0.5);
 
 	return true;
 }
@@ -498,7 +505,7 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 	renderer::render(m);
 }
 
-void renderingInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name)
+void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name)
 {
 
 	// sets up the buffer
@@ -527,8 +534,9 @@ bool render() {
 
 	// Render skybox
 	renderSkybox();
-	renderingInstanciatedMesh(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal");
-	renderingInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary");
+	renderInstanciatedMesh(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal");
+	renderInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary");
+	renderInstanciatedMesh(trees, treesAmount, treeTransforms, multiIstanceNormalEffect, "tree");
 
 	// Render meshes
 	for (auto &e : meshes) {
@@ -538,7 +546,6 @@ bool render() {
 		renderMesh(m, meshName, eff);
 	}
 	renderMesh(violet, "violet", violetEffect);
-	renderMesh(trees, "tree", treeEffect);
 	return true;
 }
 

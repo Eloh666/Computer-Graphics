@@ -36,8 +36,8 @@ mesh createDeadTreeMesh()
 mesh createTreeMesh()
 {
 	auto tree = mesh(geometry("models/tree.obj"));
-	tree.get_transform().scale = vec3(0.5, 0.5, 0.5);
-	tree.get_transform().translate(vec3(-100, 50, 100));
+	//tree.get_transform().scale = vec3(0.5, 0.5, 0.5);
+	//tree.get_transform().translate(vec3(-100, 50, 100));
 	//tree.get_transform().rotate(vec3(half_pi<float>(), 0.0f, half_pi<float>()));
 	tree.get_material().set_emissive(vec4(0.01f, 0.01f, 0.01f, 0.1f));
 	tree.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -46,26 +46,66 @@ mesh createTreeMesh()
 	return tree;
 }
 
-void getTreeLocations(vector<vec3> &modelMatrices)
+void generateTreesTransforms(vector<mat4> &transforms)
 {
 	auto locations = vector<vec3>{
-		vec3(295, 66, 89),
-		vec3(278, 62, 102),
+		vec3(285, 46, 89),
+		vec3(278, 42, 102),
+		vec3(298, 46, 89),
+		vec3(278, 42, 102),
+		vec3(250, 49, 115),
+		vec3(195, 60, 127),
+		vec3(180, 51, 95),
+		vec3(172, 65, 112),
+		vec3(124, 67, 67),
+		vec3(126, 61, 98),
+		vec3(127, 36, 118),
+		vec3(123, 75, 139),
+		vec3(104, 74, 143),
+		vec3(89, 66, 128),
+		vec3(85, 59, 96),
+		vec3(63, 57, 87),
+		vec3(46, 60, 99),
+		vec3(91, 32, 60),
+		vec3(40, 75, 115),
+		vec3(45, 45, 135),
+		vec3(25, 71, 175),
+		vec3(15, 70, 145),
+		vec3(6, 66, 142),
+		vec3(34, 46, 142),
+		vec3(119, 60, 112),
+		vec3(40, 44, 137),
+		vec3(-40, 65, 156),
+		vec3(-26, 66, 169),
+		vec3(-70, 50, 155),
+		vec3(-88, 81, 154),
+		vec3(-75, 52, 191),
+		vec3(-53, 53, 215),
+		vec3(32, 52, 224),
+		vec3(14, 54, 253),
+		vec3(6, 63, 226),
+		vec3(10, 73, 203),
+		vec3(38, 55, 285),
+		vec3(49, 53, 213),
+		vec3(106, 50, 350),
+		vec3(80, 50, 337),
 	};
-}
 
-void generateTreesTransforms(vector<mat4> &modelMatrices)
-{
-	auto base = 0.1f;
-	auto ceil = 0.5f;
+
+	auto base = 0.45f;
+	auto ceil = 1.0f;
 	auto scale = base + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (ceil - base)));
-	for (auto &mat : modelMatrices)
+	for (auto i = 0; i < locations.size(); i++)
 	{
-		// randoms the size of the tree
-		mat = glm::scale(mat, vec3(scale));
+		mat4 model;
+		model = translate(model, locations[i]);
 
 		// randoms its spin
 		GLfloat rotAngle = (rand() % 360);
-		mat = glm::rotate(mat, rotAngle, glm::vec3(0, 0.5f,0));
+		model = glm::rotate(model, rotAngle, glm::vec3(0, 0.5f, 0));
+
+		// randoms the size of the tree
+		model = glm::scale(model, vec3(scale));
+		transforms[i] = model;
 	}
 }
