@@ -224,9 +224,9 @@ bool load_content() {
 	effects["deadTree"] = createNormalMapEffect();
 
 	// Set sets up lightning values
-	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 0.1f));
+	light.set_ambient_intensity(vec4(0, 0, 0, 0));
 	light.set_direction(normalize(meshes["boat"].get_transform().position));
-	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	light.set_light_colour(vec4(0, 0, 0, 0));
 
 	initPointLights(points);
 	initSpotLights(spots);
@@ -248,8 +248,6 @@ bool update(float delta_time) {
 	// updates the water delta vector to mimick the movement
 	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
 
-
-
 	// The ratio of pixels to rotation - remember the fov
 	// Use keyboard to move the camera - WASD
 	vec3 translation(0.0f, 0.0f, 0.0f);
@@ -265,39 +263,6 @@ bool update(float delta_time) {
 	if (glfwGetKey(renderer::get_window(), 'D')) {
 		translation.x += 50.0f * delta_time;
 	}
-	if (glfwGetKey(renderer::get_window(), '1')) {
-		spots[1].move(vec3(5.0f * delta_time, 0.0f, 0.0f));
-	}
-	if (glfwGetKey(renderer::get_window(), '2')) {
-		spots[1].move(vec3(-5.0f * delta_time, 0.0f, 0.0f));
-	}
-	if (glfwGetKey(renderer::get_window(), '3')) {
-		spots[1].move(vec3(0.0f, 5.0f * delta_time, 0.0f));
-	}
-	if (glfwGetKey(renderer::get_window(), '4')) {
-		spots[1].move(vec3(0.0f, -5.0f * delta_time, 0.0f));
-	}
-	if (glfwGetKey(renderer::get_window(), '5')) {
-		spots[1].move(vec3(0.0f, 0.0f, 5.0f * delta_time));
-	}
-	if (glfwGetKey(renderer::get_window(), '6')) {
-		spots[1].move(vec3(0.0f, 0.0f, -5.0f * delta_time));
-	}
-	if (glfwGetKey(renderer::get_window(), 'Q')) {
-		cout << spots[1].get_position().x << endl;
-		cout << spots[1].get_position().y << endl;
-		cout << spots[1].get_position().z << endl;
-	}
-	if (glfwGetKey(renderer::get_window(), 'M')) {
-		cout << freeCam.get_position().x << endl;
-		cout << freeCam.get_position().y << endl;
-		cout << freeCam.get_position().z << endl;
-	}
-	if (glfwGetKey(renderer::get_window(), 'B')) {
-		cout << activeCam->get_position().x << endl;
-		cout << activeCam->get_position().y << endl;
-		cout << activeCam->get_position().z << endl;
-	}
 
 	// activates free cam
 	if (glfwGetKey(renderer::get_window(), 'F')) {
@@ -306,6 +271,16 @@ bool update(float delta_time) {
 	// activates chase cam
 	if (glfwGetKey(renderer::get_window(), 'C')) {
 		activeCam = &chaseCamera;
+	}
+
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_L)) {
+		light.set_light_colour(vec4(1, 1, 1, 1));
+		light.set_ambient_intensity(vec4(0.1, 0.1, 0.1, 1));
+	}
+
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_K)) {
+		light.set_light_colour(vec4(0, 0, 0, 0));
+		light.set_ambient_intensity(vec4(0, 0, 0, 0));
 	}
 
 	// activates static target cameras

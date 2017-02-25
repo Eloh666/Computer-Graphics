@@ -96,7 +96,7 @@ void main() {
   vec3 normalMap = calc_normal(normal, tangent, binormal, normal_map, tex_coord);
   // Calculate directional light
 
-  //colour = calculate_direction(light, mat, normalMap, view_dir, tex_colour);
+  colour = calculate_direction(light, mat, normalMap, view_dir, tex_colour);
 
   for(int i = 0; i < points.length(); i++){
 	colour += calculate_point(points[i], mat, position, normalMap, view_dir, tex_colour);
