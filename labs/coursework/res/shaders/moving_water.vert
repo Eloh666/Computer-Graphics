@@ -26,10 +26,10 @@ layout(location = 10) in vec2 tex_coord_in;
 
 // Outgoing vertex position
 layout(location = 0) out vec3 vertex_position;
-// Outgoing texture coordinate
-layout(location = 1) out vec2 tex_coord_out;
 // Outgoing normal
-layout(location = 2) out vec3 transformed_normal;
+layout(location = 1) out vec3 transformed_normal;
+// Outgoing texture coordinate
+layout(location = 2) out vec2 tex_coord_out;
 // Outgoing tangent
 layout(location = 3) out vec3 tangent_out;
 // Outgoing binormal

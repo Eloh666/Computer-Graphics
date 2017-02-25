@@ -55,11 +55,6 @@ void setupTargetCameras(vector<target_camera> &cameras, map<string, mesh> meshes
 	cameras[5].set_position(vec3(-125, 180, -295));
 	cameras[5].set_target(vec3(75, 90, -30));
 	cameras[5].set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, viewPortSize);
-
-	// boat
-	cameras[6].set_position(vec3(-195, 55, -130));
-	cameras[6].set_target(vec3(125, 32, -20));
-	cameras[6].set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, viewPortSize);
 }
 
 void handleFreeCameraMovement(free_camera &freeCam, float delta_time, vec3 &translation)

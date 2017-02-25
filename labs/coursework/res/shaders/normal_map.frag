@@ -77,10 +77,10 @@ uniform sampler2D shadow_map;
 
 // Incoming vertex position
 layout(location = 0) in vec3 position;
-// Incoming texture coordinate
-layout(location = 1) in vec2 tex_coord;
 // Incoming normal
-layout(location = 2) in vec3 normal;
+layout(location = 1) in vec3 normal;
+// Incoming texture coordinate
+layout(location = 2) in vec2 tex_coord;
 // Incoming tangent
 layout(location = 3) in vec3 tangent;
 // Incoming binormal
@@ -101,7 +101,7 @@ void main() {
   vec3 normalMap = calc_normal(normal, tangent, binormal, normal_map, tex_coord);
   // Calculate directional light
 
-  //colour = calculate_direction(light, mat, normalMap, view_dir, tex_colour);
+  colour = calculate_direction(light, mat, normalMap, view_dir, tex_colour);
 
   for(int i = 0; i < points.length(); i++){
 	colour += calculate_point(points[i], mat, position, normalMap, view_dir, tex_colour);

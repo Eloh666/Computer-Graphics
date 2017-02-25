@@ -19,7 +19,7 @@ mesh createWaterMesh()
 
 	waterMesh.get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	waterMesh.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	waterMesh.get_material().set_shininess(25.0f);
+	waterMesh.get_material().set_shininess(20.0f);
 
 	return waterMesh;
 }

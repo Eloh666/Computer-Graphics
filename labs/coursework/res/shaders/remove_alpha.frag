@@ -1,7 +1,5 @@
 #version 440
 
-// This shader requires direction.frag, point.frag and spot.frag
-
 // Directional light structure
 #ifndef DIRECTIONAL_LIGHT
 #define DIRECTIONAL_LIGHT
@@ -99,7 +97,7 @@ void main() {
   // Sample texture
   vec4 tex_colour = texture(tex, tex_coord);
 
-  //colour += calculate_direction(light, mat, normal, view_dir, tex_colour);
+  colour += calculate_direction(light, mat, normal, view_dir, tex_colour);
 
   // Sum point lights
   for(int i = 0; i < points.length(); i++){
