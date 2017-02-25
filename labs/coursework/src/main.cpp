@@ -23,6 +23,8 @@
 #include "lights/setupLights.h"
 #include "cameras/setupCameras.h"
 #include "meshes/amillaryMesh.h"
+#include "meshes/statueMesh.h"
+#include "meshes/ruinsMesh.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -70,7 +72,7 @@ cubemap cube_map;
 vec3 gemPosition;
 float rotationAngle;
 
-const int rotatingFloaterNumDebris = 1500;
+const int rotatingFloaterNumDebris = 750;
 
 vector<mat4> generalDebrisOriginalTransforms(rotatingFloaterNumDebris);
 vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
@@ -91,6 +93,7 @@ bool load_content() {
 
 	// amillary ring
 	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
+	amillaryRing.get_material().set_shininess(25.0f);
 
 	// tree positions
 	generateTreesTransforms(treeTransforms);
@@ -101,6 +104,7 @@ bool load_content() {
 	auto heightScale = 3.0f;
 	const texture height_map("textures/islandHMap.jpg");
 	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale);
+	//meshes["terrain"].get_material().set_specular(vec4(0.57, 0.3, 0.1, 0.3));
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
 	textures["terrainZero"] = texture("textures/sand.jpg", false, true);
@@ -116,7 +120,7 @@ bool load_content() {
 
 	// Generates water and loads its textures
 	meshes["waterBase"] = createWaterMesh();
-	textures["waterBase"] = texture("textures/water2.jpg", false, true);
+	textures["waterBase"] = texture("textures/water2k.jpg", false, true);
 	normal_maps["waterBase"] = texture("textures/waterNormal.jpg", false, true);
 	effects["waterBase"] = createMovingWaterEffect();
 
@@ -138,6 +142,12 @@ bool load_content() {
 	textures["moon"] = texture("textures/moonTex.jpg", false, true);
 	effects["moon"] = createMultiLightEffect();
 
+	// Generates the moon and loads its textures
+	meshes["buddha"] = createStatueMesh();
+	textures["buddha"] = texture("textures/buddha.jpg", false, true);
+	normal_maps["buddha"] = texture("textures/buddhaN.jpg", false, true);
+	effects["buddha"] = createMultiLightEffect();
+
 	// Generates the boat and loads its textures
 	meshes["boat"] = createBoatMesh();
 	textures["boat"] = texture("textures/boatTex.png", false, true);
@@ -151,15 +161,17 @@ bool load_content() {
 
 	// Generates the statue and loads its textures
 	violet = createVioletTreeMesh();
+
 	textures["violet"] = texture("textures/violet.png", false, true);
 	alpha_maps["violet"] = texture("textures/violet_a.jpg", false, true);
+	normal_maps["violet"] = texture("textures/violetNorm.png", false, true);
 	violetEffect = createMultiLightRemoveAlphaEffect();
 
-	trees = mesh(geometry("models/tree.obj"));
+	trees = createTreeMesh();
 	textures["tree"] = texture("textures/treeDiff.tga", false, true);
 	alpha_maps["tree"] = texture("textures/treeAlpha.tga", false, true);
 	normal_maps["tree"] = texture("textures/treeNorm.tga", false, true);
-	//treeEffect = createInstanciatedRemoveAlpha();
+	treeEffect = createMultiInstanceRemoveAlphaEffect();
 
 	// Generates the katana and loads its textures
 	meshes["katana"] = createKatanaMesh();
@@ -200,7 +212,7 @@ bool load_content() {
 	multiIstanceNormalEffect = createMultiInstanceEffect();
 
 	// Generates the mossyRock and loads its textures
-	//meshes["ruins"] = createRuinsMesh();
+	meshes["ruins"] = createRuinsMesh();
 	textures["ruins"] = texture("textures/grayStoneWall.jpg", false, true);
 	effects["ruins"] = createMultiLightEffect();
 
@@ -216,7 +228,7 @@ bool load_content() {
 	effects["deadTree"] = createNormalMapEffect();
 
 	// Set sets up lightning values
-	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
+	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 0.1f));
 	light.set_direction(normalize(meshes["boat"].get_transform().position));
 	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
@@ -426,8 +438,8 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 	if (alpha_maps.count(meshName) != 0)
 	{
 		glDisable(GL_CULL_FACE);
-		renderer::bind(alpha_maps[meshName], 1);
-		glUniform1i(eff.get_uniform_location("blendMap"), 1);
+		renderer::bind(alpha_maps[meshName], 2);
+		glUniform1i(eff.get_uniform_location("blendMap"), 2);
 	}
 	else
 	{
@@ -536,7 +548,7 @@ bool render() {
 	renderSkybox();
 	renderInstanciatedMesh(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal");
 	renderInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary");
-	renderInstanciatedMesh(trees, treesAmount, treeTransforms, multiIstanceNormalEffect, "tree");
+	renderInstanciatedMesh(trees, treesAmount, treeTransforms, treeEffect, "tree");
 
 	// Render meshes
 	for (auto &e : meshes) {
