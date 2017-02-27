@@ -53,5 +53,5 @@ void main() {
   // Transform binormal
   binormal_out = N * binormal;
   // Transform position into light space
-	vertex_light = lightMVP * vec4(position, 1.0);
+  vertex_light = lightMVP * vec4(position, 1.0);
 }

@@ -31,7 +31,6 @@ using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
-
 // lights
 directional_light light;
 vector<point_light> points(6);
@@ -92,6 +91,11 @@ int treesAmount = 40;
 vector<mat4> treeTransforms(treesAmount);
 
 bool load_content() {
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	GLfloat borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
 	// Create shadow map- use screen size
 	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
@@ -256,8 +260,8 @@ bool update(float delta_time) {
 	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
 
 	// updates the projection of the light
-	shadow.light_position = spots[3].get_position();
-	shadow.light_dir = spots[3].get_direction();
+	shadow.light_position = spots[1].get_position();
+	shadow.light_dir = spots[1].get_direction();
 
 	// The ratio of pixels to rotation - remember the fov
 	// Use keyboard to move the camera - WASD
@@ -273,6 +277,33 @@ bool update(float delta_time) {
 	}
 	if (glfwGetKey(renderer::get_window(), 'D')) {
 		translation.x += 50.0f * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), 'M')) {
+		cout << freeCam.get_position().x << endl;
+		cout << freeCam.get_position().y << endl;
+		cout << freeCam.get_position().z << endl;
+	}
+
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '1')) {
+		spots[1].rotate(vec3(1, 0, 0) * delta_time);
+	}
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '2')) {
+		spots[1].rotate(-vec3(1, 0, 0) * delta_time);	}
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '3')) {
+		spots[1].rotate(vec3(0, 1, 0) * delta_time);	}
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '4')) {
+		spots[1].rotate(-vec3(0, 1, 0) * delta_time);	}
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '5')) {
+		spots[1].rotate(vec3(0, 0, 1) * delta_time);
+	}
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '6')) {
+		spots[1].rotate(-vec3(0, 0, 1) * delta_time);
 	}
 
 	// activates free cam
@@ -525,7 +556,7 @@ void renderMesh(mesh &m, string meshName, effect &eff, mat4 lightProjectionMatri
 	renderer::render(m);
 }
 
-void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name)
+void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name, mat4 lightProjectionMatrix)
 {
 
 	// sets up the buffer
@@ -565,7 +596,6 @@ void renderShadows(mat4 lightProjectionMatrix)
 	glClear(GL_DEPTH_BUFFER_BIT);
 	// Set render mode to cull face
 	glCullFace(GL_FRONT);
-	
 
 	// Bind shader
 	renderer::bind(shadowEff);
@@ -595,15 +625,15 @@ void renderShadows(mat4 lightProjectionMatrix)
 
 bool render() {
 
-	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
+	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 50000.f);
 
 	// Render Shadows
 	renderShadows(lightProjectionMatrix);
 	// Render skybox
 	renderSkybox();
-	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal");
-	renderInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary");
-	renderInstanciatedMesh(trees, treesAmount, treeTransforms, treeEffect, "tree");
+	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal", lightProjectionMatrix);
+	renderInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary", lightProjectionMatrix);
+	renderInstanciatedMesh(trees, treesAmount, treeTransforms, treeEffect, "tree", lightProjectionMatrix);
 
 	// Render meshes
 	for (auto &e : meshes) {
@@ -612,7 +642,6 @@ bool render() {
 		effect eff = effects[meshName];
 		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
-	renderMesh(violet, "violet", violetEffect);
 	return true;
 }
 
