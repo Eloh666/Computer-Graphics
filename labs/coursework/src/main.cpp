@@ -168,13 +168,11 @@ bool load_content() {
 
 	// Generates the statue and loads its textures
 	meshes["violet"] = createVioletTreeMesh();
-	violet = createVioletTreeMesh();
 
 	textures["violet"] = texture("textures/violet.png", false, true);
 	alpha_maps["violet"] = texture("textures/violet_a.jpg", false, true);
 	effects["violet"] = createMultiLightRemoveAlphaEffect();
 	normal_maps["violet"] = texture("textures/violetNorm.png", false, true);
-	violetEffect = createMultiLightRemoveAlphaEffect();
 
 	trees = createTreeMesh();
 	textures["tree"] = texture("textures/treeDiff.tga", false, true);
@@ -529,8 +527,7 @@ void renderMesh(mesh &m, string meshName, effect &eff, mat4 lightProjectionMatri
 	renderer::render(m);
 }
 
-void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name)
-void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, effect eff, mat4 lightProjectionMatrix)
+void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name, mat4 lightProjectionMatrix)
 {
 
 	// sets up the buffer
@@ -559,7 +556,7 @@ void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, eff
 		GL_FALSE,
 		value_ptr(lightMVPPartial));
 
-	setupGeneralBindings(model, "crystal", eff);
+	setupGeneralBindings(model, name, eff);
 	renderer::render_instancieted(model, amount);
 }
 
@@ -607,9 +604,9 @@ bool render() {
 	renderShadows(lightProjectionMatrix);
 	// Render skybox
 	renderSkybox();
-	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal");
-	renderInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary");
-	renderInstanciatedMesh(trees, treesAmount, treeTransforms, treeEffect, "tree");
+	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal", lightProjectionMatrix);
+	renderInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary", lightProjectionMatrix);
+	renderInstanciatedMesh(trees, treesAmount, treeTransforms, treeEffect, "tree", lightProjectionMatrix);
 
 	// Render meshes
 	for (auto &e : meshes) {
@@ -618,10 +615,6 @@ bool render() {
 		effect eff = effects[meshName];
 		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
-	renderMesh(violet, "violet", violetEffect);
-
-	renderFloatingDebris(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, rotatingDebrisEffect, lightProjectionMatrix);
-	//renderMesh(trees, "tree", treeEffect);
 	return true;
 }
 
