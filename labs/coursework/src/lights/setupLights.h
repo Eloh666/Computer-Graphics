@@ -32,9 +32,10 @@ void initPointLights(vector<point_light> &points)
 	points[4].set_light_colour(vec4(1, 0.6, 0, 1));
 	points[4].set_range(15);
 
+	// rotating amillaryCore
 	points[5].set_position(vec3(0, 0, 0));
 	points[5].set_light_colour(vec4(0.4, 0.6, 1, 1));
-	points[5].set_range(125);
+	points[5].set_range(155);
 }
 
 void initSpotLights(vector<spot_light> &spots)

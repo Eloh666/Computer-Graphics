@@ -23,6 +23,8 @@
 #include "lights/setupLights.h"
 #include "cameras/setupCameras.h"
 #include "meshes/amillaryMesh.h"
+#include "meshes/statueMesh.h"
+#include "meshes/ruinsMesh.h"
 #include "shadows/setupShadows.h"
 
 using namespace std;
@@ -38,7 +40,7 @@ vector<spot_light> spots(5);
 // cameras
 free_camera freeCam;
 camera *activeCam;
-vector<target_camera> targetCameras(7);
+vector<target_camera> targetCameras(6);
 chase_camera chaseCamera;
 
 
@@ -48,15 +50,13 @@ map<string, mesh> meshes;
 mesh trees;
 mesh skybox;
 mesh crystal;
-mesh asteroidCrystal;
-mesh generalDebris;
 
 //effects
 map<string, effect> effects;
 
 effect skyboxEffect;
 effect treeEffect;
-effect rotatingDebrisEffect;
+effect multiIstanceNormalEffect;
 
 // textures
 map<string, texture> textures;
@@ -69,7 +69,7 @@ cubemap cube_map;
 vec3 gemPosition;
 float rotationAngle;
 
-const int rotatingFloaterNumDebris = 1500;
+const int rotatingFloaterNumDebris = 1000;
 
 vector<mat4> generalDebrisOriginalTransforms(rotatingFloaterNumDebris);
 vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
@@ -77,12 +77,28 @@ vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
 // water flowing delta
 vec2 waterDelta;
 
+// floating amillary
+int amillaryRingsNumber = 6;
+mesh amillaryRing;
+vector<mat4> amillaryTransforms(amillaryRingsNumber);
+
+// trees
+int treesAmount = 40;
+vector<mat4> treeTransforms(treesAmount);
+
 // shadows
 shadow_map shadow;
 effect shadowEff;
 effect generalEffect;
 
 bool load_content() {
+
+	// amillary ring
+	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
+	amillaryRing.get_material().set_shininess(25.0f);
+
+	// tree positions
+	generateTreesTransforms(treeTransforms);
 
 	// Create shadow map- use screen size
 	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
@@ -95,6 +111,7 @@ bool load_content() {
 	auto heightScale = 3.0f;
 	const texture height_map("textures/islandHMap.jpg");
 	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale);
+	//meshes["terrain"].get_material().set_specular(vec4(0.57, 0.3, 0.1, 0.3));
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
 	textures["terrainZero"] = texture("textures/sand.jpg", false, true);
@@ -110,11 +127,11 @@ bool load_content() {
 
 	// Generates water and loads its textures
 	meshes["waterBase"] = createWaterMesh();
-	textures["waterBase"] = texture("textures/water2.jpg", false, true);
+	textures["waterBase"] = texture("textures/water2k.jpg", false, true);
 	normal_maps["waterBase"] = texture("textures/waterNormal.jpg", false, true);
 	effects["waterBase"] = createMovingWaterEffect();
 
-	// Generates the night skyboxs
+	// Generates the night skyboxss
 	skybox = createSkybox();
 	array<string, 6> filenames = { "textures/skybox/starfield_ft.tga", "textures/skybox/starfield_bk.tga", "textures/skybox/starfield_up.tga",
 		"textures/skybox/starfield_dn.tga", "textures/skybox/starfield_rt.tga", "textures/skybox/starfield_lf.tga" };
@@ -132,6 +149,12 @@ bool load_content() {
 	textures["moon"] = texture("textures/moonTex.jpg", false, true);
 	effects["moon"] = createMultiLightEffect();
 
+	// Generates the moon and loads its textures
+	meshes["buddha"] = createStatueMesh();
+	textures["buddha"] = texture("textures/buddha.jpg", false, true);
+	normal_maps["buddha"] = texture("textures/buddhaN.jpg", false, true);
+	effects["buddha"] = createMultiLightEffect();
+
 	// Generates the boat and loads its textures
 	meshes["boat"] = createBoatMesh();
 	textures["boat"] = texture("textures/boatTex.png", false, true);
@@ -145,15 +168,19 @@ bool load_content() {
 
 	// Generates the statue and loads its textures
 	meshes["violet"] = createVioletTreeMesh();
+	violet = createVioletTreeMesh();
+
 	textures["violet"] = texture("textures/violet.png", false, true);
 	alpha_maps["violet"] = texture("textures/violet_a.jpg", false, true);
 	effects["violet"] = createMultiLightRemoveAlphaEffect();
+	normal_maps["violet"] = texture("textures/violetNorm.png", false, true);
+	violetEffect = createMultiLightRemoveAlphaEffect();
 
 	trees = createTreeMesh();
 	textures["tree"] = texture("textures/treeDiff.tga", false, true);
 	alpha_maps["tree"] = texture("textures/treeAlpha.tga", false, true);
 	normal_maps["tree"] = texture("textures/treeNorm.tga", false, true);
-	treeEffect = createMultiLightRemoveAlphaEffect();
+	treeEffect = createMultiInstanceRemoveAlphaEffect();
 
 	// Generates the katana and loads its textures
 	meshes["katana"] = createKatanaMesh();
@@ -179,22 +206,20 @@ bool load_content() {
 	effects["guardian"] = createNormalMapEffect();
 
 	// Setup of the floating spheres dataon = 0.0f;
-	crystal = mesh(geometry("models/crystal.obj"));
-	asteroidCrystal = mesh(geometry("models/astCrystal.obj"));
-	generalDebris = mesh(geometry("models/rock.obj"));
+	crystal = mesh(geometry("models/meteor.obj"));
 
 	textures["crystal"] = texture("textures/crystalDiffuse.jpg", false, true);
-	normal_maps["crystal"] = texture("textures/crystalNorm.jpg", false, true);
+	normal_maps["crystal"] = texture("textures/meteorNorm.tga", false, true);
 	gemPosition = meshes["guardian"].get_transform().position + vec3(0, 35, 0);
-	createSpheresTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.2f);
+	createFloatersTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.15f);
 	for (auto i = 0; i < rotatingFloaterNumDebris; i++)
 	{
 		generalDebrisRotatingDebris[i] = generalDebrisOriginalTransforms[i];
 	}
-	rotatingDebrisEffect = createMultiInstanceEffect();
+	multiIstanceNormalEffect = createMultiInstanceEffect();
 
 	// Generates the mossyRock and loads its textures
-	//meshes["ruins"] = createRuinsMesh();
+	meshes["ruins"] = createRuinsMesh();
 	textures["ruins"] = texture("textures/grayStoneWall.jpg", false, true);
 	effects["ruins"] = createMultiLightEffect();
 
@@ -210,9 +235,9 @@ bool load_content() {
 	effects["deadTree"] = createNormalMapEffect();
 
 	// Set sets up lightning values
-	light.set_ambient_intensity(vec4(0.1f, 0.1f, 0.1f, 1.0f));
+	light.set_ambient_intensity(vec4(0, 0, 0, 0));
 	light.set_direction(normalize(meshes["boat"].get_transform().position));
-	light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	light.set_light_colour(vec4(0, 0, 0, 0));
 
 	initPointLights(points);
 	initSpotLights(spots);
@@ -253,39 +278,6 @@ bool update(float delta_time) {
 	if (glfwGetKey(renderer::get_window(), 'D')) {
 		translation.x += 50.0f * delta_time;
 	}
-	if (glfwGetKey(renderer::get_window(), '1')) {
-		spots[1].move(vec3(5.0f * delta_time, 0.0f, 0.0f));
-	}
-	if (glfwGetKey(renderer::get_window(), '2')) {
-		spots[1].move(vec3(-5.0f * delta_time, 0.0f, 0.0f));
-	}
-	if (glfwGetKey(renderer::get_window(), '3')) {
-		spots[1].move(vec3(0.0f, 5.0f * delta_time, 0.0f));
-	}
-	if (glfwGetKey(renderer::get_window(), '4')) {
-		spots[1].move(vec3(0.0f, -5.0f * delta_time, 0.0f));
-	}
-	if (glfwGetKey(renderer::get_window(), '5')) {
-		spots[1].move(vec3(0.0f, 0.0f, 5.0f * delta_time));
-	}
-	if (glfwGetKey(renderer::get_window(), '6')) {
-		spots[1].move(vec3(0.0f, 0.0f, -5.0f * delta_time));
-	}
-	if (glfwGetKey(renderer::get_window(), 'Q')) {
-		cout << spots[1].get_position().x << endl;
-		cout << spots[1].get_position().y << endl;
-		cout << spots[1].get_position().z << endl;
-	}
-	if (glfwGetKey(renderer::get_window(), 'M')) {
-		cout << freeCam.get_position().x << endl;
-		cout << freeCam.get_position().y << endl;
-		cout << freeCam.get_position().z << endl;
-	}
-	if (glfwGetKey(renderer::get_window(), 'B')) {
-		cout << activeCam->get_position().x << endl;
-		cout << activeCam->get_position().y << endl;
-		cout << activeCam->get_position().z << endl;
-	}
 
 	// activates free cam
 	if (glfwGetKey(renderer::get_window(), 'F')) {
@@ -294,6 +286,16 @@ bool update(float delta_time) {
 	// activates chase cam
 	if (glfwGetKey(renderer::get_window(), 'C')) {
 		activeCam = &chaseCamera;
+	}
+
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_L)) {
+		light.set_light_colour(vec4(1, 1, 1, 1));
+		light.set_ambient_intensity(vec4(0.1, 0.1, 0.1, 1));
+	}
+
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_K)) {
+		light.set_light_colour(vec4(0, 0, 0, 0));
+		light.set_ambient_intensity(vec4(0, 0, 0, 0));
 	}
 
 	// activates static target cameras
@@ -315,8 +317,22 @@ bool update(float delta_time) {
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F6)) {
 		activeCam = &targetCameras[5];
 	}
+
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F7)) {
-		activeCam = &targetCameras[6];
+		points[5].set_light_colour(vec4(0.4, 0.6, 1, 1));
+		meshes["amillary"].get_material().set_emissive(vec4(0.1, 0.95, 0.9, 1));
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F8)) {
+		points[5].set_light_colour(vec4(1, 0.85, 0, 1));
+		meshes["amillary"].get_material().set_emissive(vec4(1, 0.85, 0, 1));
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F9)) {
+		points[5].set_light_colour(vec4(1, 0, 0, 1));
+		meshes["amillary"].get_material().set_emissive(vec4(1, 0, 0, 1));
+	}
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F10)) {
+		points[5].set_light_colour(vec4(0, 1, 0, 1));
+		meshes["amillary"].get_material().set_emissive(vec4(0, 1, 0, 1));
 	}
 
 	// handles free camera movement if active
@@ -332,7 +348,6 @@ bool update(float delta_time) {
 
 	// Update the camera
 	activeCam->update(delta_time);
-
 
 	// Rotates the amillary around the statue
 	float amillaryRotation = sin(rotationAngle) * 0.01f;
@@ -351,9 +366,10 @@ bool update(float delta_time) {
 		float diff = -1 * ((i % 2) + 1);
 		generalDebrisRotatingDebris[i] = translate(generalDebrisOriginalTransforms[i], rotationPosition * diff);
 	}
-	rotationAngle -= 1.0 * delta_time;
+	rotationAngle -= delta_time;
 
-	// *********************************
+	// Setup and rotation for amillary transforms
+	generateAmillaryRings(amillaryTransforms, meshes["amillary"].get_transform().get_transform_matrix(), rotationAngle * 0.5);
 
 	return true;
 }
@@ -421,8 +437,8 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 	if (alpha_maps.count(meshName) != 0)
 	{
 		glDisable(GL_CULL_FACE);
-		renderer::bind(alpha_maps[meshName], 1);
-		glUniform1i(eff.get_uniform_location("blendMap"), 1);
+		renderer::bind(alpha_maps[meshName], 2);
+		glUniform1i(eff.get_uniform_location("blendMap"), 2);
 	}
 	else
 	{
@@ -513,8 +529,10 @@ void renderMesh(mesh &m, string meshName, effect &eff, mat4 lightProjectionMatri
 	renderer::render(m);
 }
 
+void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name)
 void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, effect eff, mat4 lightProjectionMatrix)
 {
+
 	// sets up the buffer
 	GLuint buffer;
 	glGenBuffers(1, &buffer);
@@ -533,6 +551,7 @@ void renderFloatingDebris(mesh &model, int amount, vector<mat4> &transforms, eff
 	auto P = activeCam->get_projection();
 	glUniformMatrix4fv(eff.get_uniform_location("projection"), 1, GL_FALSE, value_ptr(P));
 
+	setupGeneralBindings(model, name, eff);
 	auto lightMVPPartial = lightProjectionMatrix * shadow.get_view();
 	// Set light transform
 	glUniformMatrix4fv(eff.get_uniform_location("lightMVPPartial"),
@@ -588,6 +607,9 @@ bool render() {
 	renderShadows(lightProjectionMatrix);
 	// Render skybox
 	renderSkybox();
+	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal");
+	renderInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary");
+	renderInstanciatedMesh(trees, treesAmount, treeTransforms, treeEffect, "tree");
 
 	// Render meshes
 	for (auto &e : meshes) {
@@ -596,6 +618,7 @@ bool render() {
 		effect eff = effects[meshName];
 		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
+	renderMesh(violet, "violet", violetEffect);
 
 	renderFloatingDebris(generalDebris, rotatingFloaterNumDebris, generalDebrisRotatingDebris, rotatingDebrisEffect, lightProjectionMatrix);
 	//renderMesh(trees, "tree", treeEffect);

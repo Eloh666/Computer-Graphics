@@ -9,12 +9,40 @@ using namespace glm;
 
 mesh createAmillaryMesh()
 {
-	auto statue = mesh(geometry("models/amillary.obj"));
-	statue.get_transform().translate(vec3(150, 100, 0));
-	statue.get_transform().scale = vec3(0.75, 0.75, 0.75);
-	statue.get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
-	statue.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-	statue.get_material().set_shininess(100.0f);
+	auto amillaryBody = mesh(geometry("models/amillary.obj"));
+	amillaryBody.get_transform().translate(vec3(150, 100, 0));
+	amillaryBody.get_transform().scale = vec3(0.15, 0.15, 0.15);
+	amillaryBody.get_material().set_emissive((vec4(0.1, 0.95, 0.9, 1)));
+	amillaryBody.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	amillaryBody.get_material().set_shininess(100.0f);
+	return amillaryBody;
+}
 
-	return statue;
+void generateAmillaryRings(vector<mat4> &modelMatrices, mat4 corePos, float rotationCoefficient)
+{
+
+	vector<vec3> rotations{
+		vec3(0.0f, 0.0f, -quarter_pi<float>()),
+		vec3(quarter_pi<float>(), 0.0f, 0.0f),
+		vec3(0.0f, quarter_pi<float>(), 0.0f),
+		vec3(0.0f, 0.0f, -quarter_pi<float>()),
+		vec3(quarter_pi<float>(), 0.0f, 0.0f),
+		vec3(0.0f, -quarter_pi<float>(), 0.0f),
+	};
+
+
+	for (auto i = 0; i < modelMatrices.size(); i++)
+	{
+		mat4 model;
+		modelMatrices[i] = model;
+		for (auto j = i; j > 0; j--) {
+			modelMatrices[i] = modelMatrices[j - 1] * modelMatrices[i];
+		}
+		modelMatrices[i] = rotate(modelMatrices[i], rotationCoefficient, rotations[i % 6]);
+	}
+	for (auto i = 0; i < modelMatrices.size(); i++)
+	{
+		modelMatrices[i] = scale(corePos, vec3(7, 7, 7)) * modelMatrices[i];
+		modelMatrices[i] = scale(modelMatrices[i], vec3(0.35f, 0.35f, 0.35f) + vec3(0.35, 0.35, 0.35) * static_cast<float> (i + 1));
+	}
 }

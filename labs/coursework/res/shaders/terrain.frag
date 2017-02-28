@@ -106,7 +106,7 @@ void main() {
 
   vec3 normalMap = calc_normal(normal, tangent, binormal, weightedNormal, tex_coord);
 
-  //colour = calculate_direction(light, mat, normalMap, view_dir, tex_colour);
+  colour = calculate_direction(light, mat, normalMap, view_dir, tex_colour);
 
   // Sum point lights
   for(int i = 0; i < points.length(); i++){
