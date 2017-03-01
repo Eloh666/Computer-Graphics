@@ -17,7 +17,6 @@
 #include "meshes/stoneSwordMesh.h"
 #include "meshes/stoneGuardMesh.h"
 #include "effects/movingWaterEff.h"
-#include "effects/debrisEff.h"
 #include "rendering/debrisTransforms.h"
 #include "meshes/treeMesh.h"
 #include "lights/setupLights.h"
@@ -25,7 +24,7 @@
 #include "meshes/amillaryMesh.h"
 #include "meshes/statueMesh.h"
 #include "meshes/ruinsMesh.h"
-#include "shadows/setupShadows.h"
+#include "effects/instanceBasedEff.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -258,8 +257,8 @@ bool update(float delta_time) {
 	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
 
 	// updates the projection of the light
-	shadow.light_position = spots[3].get_position();
-	shadow.light_dir = spots[3].get_direction();
+	shadow.light_position = spots[1].get_position();
+	shadow.light_dir = spots[1].get_direction();
 
 	// The ratio of pixels to rotation - remember the fov
 	// Use keyboard to move the camera - WASD
