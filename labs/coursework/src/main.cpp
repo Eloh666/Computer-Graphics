@@ -17,7 +17,6 @@
 #include "meshes/stoneSwordMesh.h"
 #include "meshes/stoneGuardMesh.h"
 #include "effects/movingWaterEff.h"
-#include "effects/debrisEff.h"
 #include "rendering/debrisTransforms.h"
 #include "meshes/treeMesh.h"
 #include "lights/setupLights.h"
@@ -25,7 +24,7 @@
 #include "meshes/amillaryMesh.h"
 #include "meshes/statueMesh.h"
 #include "meshes/ruinsMesh.h"
-#include "shadows/setupShadows.h"
+#include "effects/instanceBasedEff.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -76,11 +75,6 @@ vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
 // water flowing delta
 vec2 waterDelta;
 
-// shadows
-shadow_map shadow;
-effect shadowEff;
-effect generalEffect;
-
 // floating amillary
 int amillaryRingsNumber = 6;
 mesh amillaryRing;
@@ -89,6 +83,11 @@ vector<mat4> amillaryTransforms(amillaryRingsNumber);
 // trees
 int treesAmount = 40;
 vector<mat4> treeTransforms(treesAmount);
+
+// shadows
+shadow_map shadow;
+effect shadowEff;
+effect generalEffect;
 
 bool load_content() {
 
@@ -172,9 +171,11 @@ bool load_content() {
 
 	// Generates the statue and loads its textures
 	meshes["violet"] = createVioletTreeMesh();
+
 	textures["violet"] = texture("textures/violet.png", false, true);
 	alpha_maps["violet"] = texture("textures/violet_a.jpg", false, true);
 	effects["violet"] = createMultiLightRemoveAlphaEffect();
+	normal_maps["violet"] = texture("textures/violetNorm.png", false, true);
 
 	trees = createTreeMesh();
 	textures["tree"] = texture("textures/treeDiff.tga", false, true);
@@ -625,7 +626,7 @@ void renderShadows(mat4 lightProjectionMatrix)
 
 bool render() {
 
-	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 50000.f);
+	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
 
 	// Render Shadows
 	renderShadows(lightProjectionMatrix);

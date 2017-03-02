@@ -73,7 +73,7 @@ void generateTreesTransforms(vector<mat4> &transforms)
 		vec3(-40, 35, 156),
 		vec3(-26, 66, 169),
 		vec3(-70, 50, 155),
-		vec3(-88, 81, 154),
+		vec3(-88, 100, 154),
 		vec3(-75, 42, 191),
 		vec3(-53, 53, 215),
 		vec3(32, 52, 224),
