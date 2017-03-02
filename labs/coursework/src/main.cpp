@@ -30,6 +30,7 @@ using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
+
 // lights
 directional_light light;
 vector<point_light> points(6);
@@ -87,19 +88,9 @@ vector<mat4> treeTransforms(treesAmount);
 // shadows
 shadow_map shadow;
 effect shadowEff;
-effect generalEffect;
+bool shouldRenderShadows;
 
 bool load_content() {
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	GLfloat borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-
-	// Create shadow map- use screen size
-	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
-	shadowEff = createMultiLightEffect();
-	generalEffect = createMultiLightEffect();
 
 	// amillary ring
 	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
@@ -107,6 +98,11 @@ bool load_content() {
 
 	// tree positions
 	generateTreesTransforms(treeTransforms);
+
+	// Create shadow map- use screen size
+	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
+	shadowEff = createMultiLightEffect();
+	shouldRenderShadows = false;
 
 	// Generates the terrain and loads its textures
 	auto width = 30;
@@ -260,10 +256,6 @@ bool update(float delta_time) {
 	// updates the water delta vector to mimick the movement
 	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
 
-	// updates the projection of the light
-	shadow.light_position = spots[1].get_position();
-	shadow.light_dir = spots[1].get_direction();
-
 	// The ratio of pixels to rotation - remember the fov
 	// Use keyboard to move the camera - WASD
 	vec3 translation(0.0f, 0.0f, 0.0f);
@@ -279,33 +271,6 @@ bool update(float delta_time) {
 	if (glfwGetKey(renderer::get_window(), 'D')) {
 		translation.x += 50.0f * delta_time;
 	}
-	if (glfwGetKey(renderer::get_window(), 'M')) {
-		cout << freeCam.get_position().x << endl;
-		cout << freeCam.get_position().y << endl;
-		cout << freeCam.get_position().z << endl;
-	}
-
-	// activates free cam
-	if (glfwGetKey(renderer::get_window(), '1')) {
-		spots[1].rotate(vec3(1, 0, 0) * delta_time);
-	}
-	// activates free cam
-	if (glfwGetKey(renderer::get_window(), '2')) {
-		spots[1].rotate(-vec3(1, 0, 0) * delta_time);	}
-	// activates free cam
-	if (glfwGetKey(renderer::get_window(), '3')) {
-		spots[1].rotate(vec3(0, 1, 0) * delta_time);	}
-	// activates free cam
-	if (glfwGetKey(renderer::get_window(), '4')) {
-		spots[1].rotate(-vec3(0, 1, 0) * delta_time);	}
-	// activates free cam
-	if (glfwGetKey(renderer::get_window(), '5')) {
-		spots[1].rotate(vec3(0, 0, 1) * delta_time);
-	}
-	// activates free cam
-	if (glfwGetKey(renderer::get_window(), '6')) {
-		spots[1].rotate(-vec3(0, 0, 1) * delta_time);
-	}
 
 	// activates free cam
 	if (glfwGetKey(renderer::get_window(), 'F')) {
@@ -314,6 +279,15 @@ bool update(float delta_time) {
 	// activates chase cam
 	if (glfwGetKey(renderer::get_window(), 'C')) {
 		activeCam = &chaseCamera;
+	}
+
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_O)) {
+		shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
+		shouldRenderShadows = false;
+	}
+
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_P)) {
+		shouldRenderShadows = true;
 	}
 
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_L)) {
@@ -398,6 +372,20 @@ bool update(float delta_time) {
 
 	// Setup and rotation for amillary transforms
 	generateAmillaryRings(amillaryTransforms, meshes["amillary"].get_transform().get_transform_matrix(), rotationAngle * 0.5);
+
+	// updates shadows status, temporarily behind a switch
+	if (shouldRenderShadows)
+	{
+		spots[3].set_range(500);
+		// updates the projection of the light
+		shadow.light_position = spots[3].get_position();
+		shadow.light_dir = spots[3].get_direction();
+	}
+	else
+	{
+		spots[3].set_range(0);
+	}
+
 
 	return true;
 }
@@ -578,6 +566,7 @@ void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, e
 	auto P = activeCam->get_projection();
 	glUniformMatrix4fv(eff.get_uniform_location("projection"), 1, GL_FALSE, value_ptr(P));
 
+	setupGeneralBindings(model, name, eff);
 	auto lightMVPPartial = lightProjectionMatrix * shadow.get_view();
 	// Set light transform
 	glUniformMatrix4fv(eff.get_uniform_location("lightMVPPartial"),
@@ -597,6 +586,7 @@ void renderShadows(mat4 lightProjectionMatrix)
 	glClear(GL_DEPTH_BUFFER_BIT);
 	// Set render mode to cull face
 	glCullFace(GL_FRONT);
+
 
 	// Bind shader
 	renderer::bind(shadowEff);
@@ -628,8 +618,11 @@ bool render() {
 
 	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
 
-	// Render Shadows
-	renderShadows(lightProjectionMatrix);
+	if (shouldRenderShadows)
+	{
+		// Render Shadows
+		renderShadows(lightProjectionMatrix);
+	}
 	// Render skybox
 	renderSkybox();
 	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal", lightProjectionMatrix);

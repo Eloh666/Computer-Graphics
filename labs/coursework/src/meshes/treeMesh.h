@@ -23,7 +23,8 @@ mesh createDeadTreeMesh()
 {
 	auto tree = mesh(geometry("models/deadTree.obj"));
 	tree.get_transform().scale = vec3(0.005, 0.005, 0.005);
-	tree.get_transform().translate(vec3(-350, 0, -24));
+	//tree.get_transform().translate(vec3(-350, 0, -24));
+	tree.get_transform().translate((vec3(-250, 45, 45)));
 	tree.get_material().set_emissive(vec4(0.01f, 0.01f, 0.01f, 0.1f));
 	tree.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	tree.get_material().set_shininess(65.0f);
