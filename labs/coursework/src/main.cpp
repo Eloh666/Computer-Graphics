@@ -30,7 +30,6 @@ using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
-
 // lights
 directional_light light;
 vector<point_light> points(6);
@@ -92,17 +91,22 @@ effect generalEffect;
 
 bool load_content() {
 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	GLfloat borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	// Create shadow map- use screen size
+	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
+	shadowEff = createMultiLightEffect();
+	generalEffect = createMultiLightEffect();
+
 	// amillary ring
 	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
 	amillaryRing.get_material().set_shininess(25.0f);
 
 	// tree positions
 	generateTreesTransforms(treeTransforms);
-
-	// Create shadow map- use screen size
-	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
-	shadowEff = createMultiLightEffect();
-	generalEffect = createMultiLightEffect();
 
 	// Generates the terrain and loads its textures
 	auto width = 30;
@@ -274,6 +278,33 @@ bool update(float delta_time) {
 	}
 	if (glfwGetKey(renderer::get_window(), 'D')) {
 		translation.x += 50.0f * delta_time;
+	}
+	if (glfwGetKey(renderer::get_window(), 'M')) {
+		cout << freeCam.get_position().x << endl;
+		cout << freeCam.get_position().y << endl;
+		cout << freeCam.get_position().z << endl;
+	}
+
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '1')) {
+		spots[1].rotate(vec3(1, 0, 0) * delta_time);
+	}
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '2')) {
+		spots[1].rotate(-vec3(1, 0, 0) * delta_time);	}
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '3')) {
+		spots[1].rotate(vec3(0, 1, 0) * delta_time);	}
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '4')) {
+		spots[1].rotate(-vec3(0, 1, 0) * delta_time);	}
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '5')) {
+		spots[1].rotate(vec3(0, 0, 1) * delta_time);
+	}
+	// activates free cam
+	if (glfwGetKey(renderer::get_window(), '6')) {
+		spots[1].rotate(-vec3(0, 0, 1) * delta_time);
 	}
 
 	// activates free cam
@@ -547,7 +578,6 @@ void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, e
 	auto P = activeCam->get_projection();
 	glUniformMatrix4fv(eff.get_uniform_location("projection"), 1, GL_FALSE, value_ptr(P));
 
-	setupGeneralBindings(model, name, eff);
 	auto lightMVPPartial = lightProjectionMatrix * shadow.get_view();
 	// Set light transform
 	glUniformMatrix4fv(eff.get_uniform_location("lightMVPPartial"),
@@ -567,7 +597,6 @@ void renderShadows(mat4 lightProjectionMatrix)
 	glClear(GL_DEPTH_BUFFER_BIT);
 	// Set render mode to cull face
 	glCullFace(GL_FRONT);
-	
 
 	// Bind shader
 	renderer::bind(shadowEff);

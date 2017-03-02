@@ -48,11 +48,11 @@ void initSpotLights(vector<spot_light> &spots)
 	spots[0].set_direction(vec3(-350, 385, 285));
 
 	// moon general light
-	spots[1].set_position(vec3(-350, 385, 285));
+	spots[1].set_position(vec3(-430, 430, 350));
 	spots[1].set_light_colour(vec4(1, 1, 1, 1));
-	spots[1].set_range(15);
-	spots[1].set_power(1.0f);
-	spots[1].set_direction(vec3(600, 100, -350));
+	spots[1].set_range(3000);
+	spots[1].set_power(5.0f);
+	spots[1].set_direction(normalize(-spots[1].get_position()));
 
 	//guardian blue spot
 	spots[2].set_position(vec3(170, 230, 217.5));
