@@ -68,7 +68,7 @@ cubemap cube_map;
 vec3 gemPosition;
 float rotationAngle;
 
-const int rotatingFloaterNumDebris = 1000;
+const int rotatingFloaterNumDebris = 2000;
 
 vector<mat4> generalDebrisOriginalTransforms(rotatingFloaterNumDebris);
 vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);

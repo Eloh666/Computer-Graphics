@@ -93,6 +93,7 @@ void main() {
   // Sample texture
   vec4 tex_colour = texture(tex, tex_coord);
 
+  // Calculates direction ambient light
   colour = calculate_direction(light, mat, normal, view_dir, tex_colour);
 
   // Sum point lights

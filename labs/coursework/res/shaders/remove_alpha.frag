@@ -109,7 +109,7 @@ void main() {
 	colour += calculate_spot(spots[i], mat, position, normal, view_dir, tex_colour);
   }
 
-  colour = removeAlpha(colour, blendMap, tex_coord);
+  colour = removeAlpha(tex_colour, blendMap, tex_coord);
   if(colour[3] < 0.5){
 	discard;
   }

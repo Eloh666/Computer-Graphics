@@ -10,7 +10,7 @@ float viewPortSize = 3000.0f;
 
 void setupFreeCam(free_camera &freeCam)
 {
-	freeCam.set_position(vec3(-250, 45, 45));
+	freeCam.set_position(vec3(415, 65, -215));
 	freeCam.set_target(vec3(100, 100, 100));
 	freeCam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, viewPortSize);
 }
