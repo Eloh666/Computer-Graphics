@@ -6,6 +6,8 @@ uniform mat4 MVP;
 uniform mat4 M;
 // N transformation matrix
 uniform mat3 N;
+// The light transformation matrix
+uniform mat4 lightMVP;
 
 // Incoming position
 layout(location = 0) in vec3 position;
@@ -32,6 +34,8 @@ layout(location = 3) out vec4 vertex_tex_weight;
 layout(location = 4) out vec3 tangent_out;
 // Outgoing binormal
 layout(location = 5) out vec3 binormal_out;
+// Outgoing position in light space
+layout (location = 9) out vec4 vertex_light;
 
 void main() {
   // Calculate screen position
@@ -44,11 +48,10 @@ void main() {
   vertex_tex_coord = tex_coord;
   // Pass through tex_weight
   vertex_tex_weight = tex_weight;
-
   // Transform tangent
   tangent_out = N * tangent;
   // Transform binormal
   binormal_out = N * binormal;
-
-
+  // Transform position into light space
+  vertex_light = lightMVP * vec4(position, 1.0);
 }

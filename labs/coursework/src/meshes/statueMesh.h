@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createStatueMesh()
+inline mesh createStatueMesh()
 {
 	auto statue = mesh(geometry("models/buddha.obj"));
 	statue.get_transform().translate(vec3(42, 42, 0));

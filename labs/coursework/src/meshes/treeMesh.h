@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createVioletTreeMesh()
+inline mesh createVioletTreeMesh()
 {
 	auto tree = mesh(geometry("models/violet.obj"));
 	tree.get_transform().scale = vec3(2.0, 1.0, 2.0);
@@ -19,11 +19,12 @@ mesh createVioletTreeMesh()
 	return tree;
 }
 
-mesh createDeadTreeMesh()
+inline mesh createDeadTreeMesh()
 {
 	auto tree = mesh(geometry("models/deadTree.obj"));
 	tree.get_transform().scale = vec3(0.005, 0.005, 0.005);
-	tree.get_transform().translate(vec3(-350, 40, -24));
+	//tree.get_transform().translate(vec3(-350, 0, -24));
+	tree.get_transform().translate((vec3(-250, 45, 45)));
 	tree.get_material().set_emissive(vec4(0.01f, 0.01f, 0.01f, 0.1f));
 	tree.get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 	tree.get_material().set_shininess(65.0f);
@@ -31,7 +32,7 @@ mesh createDeadTreeMesh()
 	return tree;
 }
 
-mesh createTreeMesh()
+inline mesh createTreeMesh()
 {
 	auto tree = mesh(geometry("models/tree.obj"));
 	tree.get_material().set_emissive(vec4(0.01f, 0.01f, 0.01f, 0.1f));
@@ -41,7 +42,7 @@ mesh createTreeMesh()
 	return tree;
 }
 
-void generateTreesTransforms(vector<mat4> &transforms)
+inline void generateTreesTransforms(vector<mat4> &transforms)
 {
 	auto locations = vector<vec3>{
 		vec3(285, 56, 89),
@@ -72,17 +73,17 @@ void generateTreesTransforms(vector<mat4> &transforms)
 		vec3(40, 44, 137),
 		vec3(-40, 35, 156),
 		vec3(-26, 66, 169),
-		vec3(-70, 50, 155),
-		vec3(-88, 81, 154),
-		vec3(-75, 42, 191),
-		vec3(-53, 53, 215),
-		vec3(32, 52, 224),
-		vec3(14, 54, 253),
+		vec3(-70, 60, 155),
+		vec3(-88, 60, 154),
+		vec3(-75, 62, 191),
+		vec3(-53, 63, 215),
+		vec3(32, 62, 224),
+		vec3(14, 64, 253),
 		vec3(6, 63, 226),
 		vec3(10, 73, 203),
-		vec3(38, 55, 285),
-		vec3(49, 53, 213),
-		vec3(106, 50, 350),
+		vec3(38, 75, 285),
+		vec3(49, 63, 213),
+		vec3(106, 70, 350),
 		vec3(80, 50, 337),
 	};
 

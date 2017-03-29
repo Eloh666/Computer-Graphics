@@ -6,6 +6,8 @@ uniform mat4 projection;
 uniform mat4 view;
 // The normal matrix
 uniform mat3 N;
+// The light transformation matrix
+uniform mat4 lightMVPPartial;
 
 // Incoming position
 layout(location = 0) in vec3 position;
@@ -30,6 +32,8 @@ layout(location = 2) out vec2 tex_coord_out;
 layout(location = 3) out vec3 tangent_out;
 // Outgoing binormal
 layout(location = 4) out vec3 binormal_out;
+// Outgoing position in light space
+layout (location = 9) out vec4 vertex_light;
 
 void main() {
   // Transform position into screen space
@@ -40,8 +44,13 @@ void main() {
   tex_coord_out = tex_coord_in;
   // Transform normal
   transformed_normal = N * normal;
+
   // Transform tangent
    tangent_out = N * tangent;
   // Transform binormal
    binormal_out = N * binormal;
+  
+   // Transform position into light space
+	vertex_light = lightMVPPartial * instanceMatrix * vec4(position, 1.0);
+
 }

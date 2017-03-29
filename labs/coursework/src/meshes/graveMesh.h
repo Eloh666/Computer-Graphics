@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createGraveMesh()
+inline mesh createGraveMesh()
 {
 	auto grave = mesh(geometry("models/grave.obj"));
 	grave.get_transform().translate(vec3(38, 43, 6));

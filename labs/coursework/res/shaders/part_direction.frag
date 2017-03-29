@@ -24,7 +24,6 @@ struct material
 // Calculates the directional light
 vec4 calculate_direction(in directional_light light, in material mat, in vec3 normal, in vec3 view_dir, in vec4 tex_colour)
 {
- // *********************************
 	// Calculate ambient component
     vec4 ambient = light.ambient_intensity * mat.diffuse_reflection;
 	// Calculate diffuse component
@@ -35,7 +34,6 @@ vec4 calculate_direction(in directional_light light, in material mat, in vec3 no
 	// Calculate specular component
     float k = pow(max(dot(normal, half_vector), 0.0), mat.shininess);
     vec4 specular = k * (light.light_colour * mat.specular_reflection);
- // *********************************
 	// Calculate colour to return
 	vec4 colour = ((mat.emissive + ambient + diffuse) * tex_colour) + specular;
 	colour.a = 1.0;

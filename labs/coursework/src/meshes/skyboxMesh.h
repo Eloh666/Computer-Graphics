@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-vector<vec3> gePositions()
+inline vector<vec3> gePositions()
 {
 	return{
 		vec3(-1.0f, 1.0f, -1.0f),

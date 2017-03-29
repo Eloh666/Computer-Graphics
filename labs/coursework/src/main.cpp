@@ -17,7 +17,6 @@
 #include "meshes/stoneSwordMesh.h"
 #include "meshes/stoneGuardMesh.h"
 #include "effects/movingWaterEff.h"
-#include "effects/debrisEff.h"
 #include "rendering/debrisTransforms.h"
 #include "meshes/treeMesh.h"
 #include "lights/setupLights.h"
@@ -25,6 +24,8 @@
 #include "meshes/amillaryMesh.h"
 #include "meshes/statueMesh.h"
 #include "meshes/ruinsMesh.h"
+#include "effects/instanceBasedEff.h"
+#include "postProcessing/postProcessing.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -46,7 +47,6 @@ chase_camera chaseCamera;
 // meshes
 map<string, mesh> meshes;
 
-mesh violet;
 mesh trees;
 mesh skybox;
 mesh crystal;
@@ -55,9 +55,10 @@ mesh crystal;
 map<string, effect> effects;
 
 effect skyboxEffect;
-effect violetEffect;
 effect treeEffect;
 effect multiIstanceNormalEffect;
+effect motionBlurEffect;
+effect basicTextureEffect;
 
 // textures
 map<string, texture> textures;
@@ -70,7 +71,7 @@ cubemap cube_map;
 vec3 gemPosition;
 float rotationAngle;
 
-const int rotatingFloaterNumDebris = 1000;
+const int rotatingFloaterNumDebris = 2000;
 
 vector<mat4> generalDebrisOriginalTransforms(rotatingFloaterNumDebris);
 vector<mat4> generalDebrisRotatingDebris(rotatingFloaterNumDebris);
@@ -87,7 +88,30 @@ vector<mat4> amillaryTransforms(amillaryRingsNumber);
 int treesAmount = 40;
 vector<mat4> treeTransforms(treesAmount);
 
+// shadows
+shadow_map shadow;
+effect shadowEff;
+bool shouldRenderShadows;
+
+// frame data and post-processing
+frame_buffer frames[2];
+frame_buffer temp_frame;
+unsigned int current_frame = 0;
+geometry screen_quad;
+float motionBlurCoeff = 0;
+
 bool load_content() {
+
+	// initis motion blur required params
+	// initFrames
+	initScreenQuad(screen_quad);
+	// Create 2 frame buffers - use screen width and height
+	frames[0] = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+	frames[1] = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+	// Create a temp framebuffer
+	temp_frame = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+	motionBlurEffect = createMotionBlurEffect();
+	basicTextureEffect = createBasicTexturingEffect();
 
 	// amillary ring
 	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
@@ -95,6 +119,11 @@ bool load_content() {
 
 	// tree positions
 	generateTreesTransforms(treeTransforms);
+
+	// Create shadow map- use screen size
+	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
+	shadowEff = createMultiLightEffect();
+	shouldRenderShadows = false;
 
 	// Generates the terrain and loads its textures
 	auto width = 30;
@@ -158,12 +187,12 @@ bool load_content() {
 	effects["grave"] = createMultiLightEffect();
 
 	// Generates the statue and loads its textures
-	violet = createVioletTreeMesh();
+	meshes["violet"] = createVioletTreeMesh();
 
 	textures["violet"] = texture("textures/violet.png", false, true);
 	alpha_maps["violet"] = texture("textures/violet_a.jpg", false, true);
+	effects["violet"] = createMultiLightRemoveAlphaEffect();
 	normal_maps["violet"] = texture("textures/violetNorm.png", false, true);
-	violetEffect = createMultiLightRemoveAlphaEffect();
 
 	trees = createTreeMesh();
 	textures["tree"] = texture("textures/treeDiff.tga", false, true);
@@ -243,11 +272,9 @@ bool load_content() {
 	return true;
 }
 
-bool update(float delta_time) {
 
-	// updates the water delta vector to mimick the movement
-	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
-
+void handleUserInput(float delta_time)
+{
 	// The ratio of pixels to rotation - remember the fov
 	// Use keyboard to move the camera - WASD
 	vec3 translation(0.0f, 0.0f, 0.0f);
@@ -271,6 +298,15 @@ bool update(float delta_time) {
 	// activates chase cam
 	if (glfwGetKey(renderer::get_window(), 'C')) {
 		activeCam = &chaseCamera;
+	}
+
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_O)) {
+		shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
+		shouldRenderShadows = false;
+	}
+
+	if (glfwGetKey(renderer::get_window(), GLFW_KEY_P)) {
+		shouldRenderShadows = true;
 	}
 
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_L)) {
@@ -331,6 +367,33 @@ bool update(float delta_time) {
 		handleChaseCameraMovement(chaseCamera, delta_time, meshes["amillary"]);
 	}
 
+	// handles motion blurStatus
+	// none
+	if (glfwGetKey(renderer::get_window(), 'B')) {
+		motionBlurCoeff = 0;
+	}
+	// medium
+	if (glfwGetKey(renderer::get_window(), 'N')) {
+		motionBlurCoeff = 0.65;
+	}
+	// on drugs
+	if (glfwGetKey(renderer::get_window(), 'M')) {
+		motionBlurCoeff = 0.9;
+	}
+
+}
+
+bool update(float delta_time) {
+
+	// userBindings
+	handleUserInput(delta_time);
+
+	// Flip frame
+	current_frame = (current_frame + 1) % 2;
+
+	// updates the water delta vector to mimick the movement
+	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
+
 	// Update the camera
 	activeCam->update(delta_time);
 
@@ -355,6 +418,20 @@ bool update(float delta_time) {
 
 	// Setup and rotation for amillary transforms
 	generateAmillaryRings(amillaryTransforms, meshes["amillary"].get_transform().get_transform_matrix(), rotationAngle * 0.5);
+
+	// updates shadows status, temporarily behind a switch
+	if (shouldRenderShadows)
+	{
+		spots[3].set_range(500);
+		// updates the projection of the light
+		shadow.light_position = spots[3].get_position();
+		shadow.light_dir = spots[3].get_direction();
+	}
+	else
+	{
+		spots[3].set_range(0);
+	}
+
 
 	return true;
 }
@@ -472,14 +549,20 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 		// Set tex uniform
 		glUniform1i(eff.get_uniform_location("tex"), 0);
 	}
+
+	// Bind eye position
 	glUniform3fv(
 		eff.get_uniform_location("eye_pos"),
 		1,
 		value_ptr(activeCam->get_position())
 		);
+
+	// Bind shadow map texture - using available index
+	renderer::bind(shadow.buffer->get_depth(), 15);
+	glUniform1i(eff.get_uniform_location("shadow_map"), 15);
 }
 
-void renderMesh(mesh &m, string meshName, effect &eff)
+void renderMesh(mesh &m, string meshName, effect &eff, mat4 lightProjectionMatrix)
 {
 	renderer::bind(eff);
 
@@ -495,13 +578,20 @@ void renderMesh(mesh &m, string meshName, effect &eff)
 		value_ptr(MVP));
 	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 
+	auto lightMVP = lightProjectionMatrix * shadow.get_view() * M;
+	// Set light transform
+	glUniformMatrix4fv(eff.get_uniform_location("lightMVP"),
+		1,
+		GL_FALSE,
+		value_ptr(lightMVP));
+
 	setupGeneralBindings(m, meshName, eff);
 
 	// Render mesh
 	renderer::render(m);
 }
 
-void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name)
+void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name, mat4 lightProjectionMatrix)
 {
 
 	// sets up the buffer
@@ -523,25 +613,126 @@ void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, e
 	glUniformMatrix4fv(eff.get_uniform_location("projection"), 1, GL_FALSE, value_ptr(P));
 
 	setupGeneralBindings(model, name, eff);
+	auto lightMVPPartial = lightProjectionMatrix * shadow.get_view();
+	// Set light transform
+	glUniformMatrix4fv(eff.get_uniform_location("lightMVPPartial"),
+		1,
+		GL_FALSE,
+		value_ptr(lightMVPPartial));
+
+	setupGeneralBindings(model, name, eff);
 	renderer::render_instancieted(model, amount);
 }
 
-bool render() {
+void renderShadows(mat4 lightProjectionMatrix)
+{
+	// Set render target to shadow map
+	renderer::set_render_target(shadow);
+	// Clear depth buffer bit
+	glClear(GL_DEPTH_BUFFER_BIT);
+	// Set render mode to cull face
+	glCullFace(GL_FRONT);
+
+
+	// Bind shader
+	renderer::bind(shadowEff);
+	// Render meshes
+	for (auto &e : meshes) {
+		auto m = e.second;
+		// Create MVP matrix
+		auto M = m.get_transform().get_transform_matrix();
+		// *********************************
+		// View matrix taken from shadow map
+		auto V = shadow.get_view();
+		// *********************************
+		auto MVP = lightProjectionMatrix * V * M;
+		// Set MVP matrix uniform
+		glUniformMatrix4fv(shadowEff.get_uniform_location("MVP"), // Location of uniform
+			1,                                      // Number of values - 1 mat4
+			GL_FALSE,                               // Transpose the matrix?
+			value_ptr(MVP));                        // Pointer to matrix data
+													// Render mesh
+		renderer::render(m);
+	}
+	// Set render target back to the screen
+	renderer::set_render_target();
+	// Set cull face to back
+	glCullFace(GL_BACK);
+}
+
+void renderSceneToTarget(mat4 &lightProjectionMatrix)
+{
+	// select render target
+	renderer::set_render_target(temp_frame);
+	// clear renderer
+	renderer::clear();
 
 	// Render skybox
 	renderSkybox();
-	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal");
-	renderInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary");
-	renderInstanciatedMesh(trees, treesAmount, treeTransforms, treeEffect, "tree");
+	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal", lightProjectionMatrix);
+	renderInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary", lightProjectionMatrix);
+	renderInstanciatedMesh(trees, treesAmount, treeTransforms, treeEffect, "tree", lightProjectionMatrix);
 
 	// Render meshes
 	for (auto &e : meshes) {
 		auto m = e.second;
 		auto meshName = e.first;
 		effect eff = effects[meshName];
-		renderMesh(m, meshName, eff);
+		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
-	renderMesh(violet, "violet", violetEffect);
+}
+
+void renderBufferToTarget()
+{
+		// Frame pass
+		renderer::set_render_target(frames[current_frame]);
+		// Clear frame
+		renderer::clear();
+		// Bind effect
+		renderer::bind(motionBlurEffect);
+		// MVP is now the identity matrix
+		auto MVP = mat4(1.0);
+		// Set MVP matrix uniform
+		glUniformMatrix4fv(motionBlurEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+		// Bind tempframe to TU 0.
+		renderer::bind(temp_frame.get_frame(), 0);
+		// Bind frames[(current_frame + 1) % 2] to TU 1.
+		renderer::bind(frames[(current_frame + 1) % 2].get_frame(), 1);
+		// Set tex uniforms
+		glUniform1i(motionBlurEffect.get_uniform_location("tex"), 0);
+		glUniform1i(motionBlurEffect.get_uniform_location("previous_frame"), 1);
+		// Set blend factor (0.9f)
+		glUniform1f(motionBlurEffect.get_uniform_location("blend_factor"), motionBlurCoeff);
+		// Render screen quad
+		renderer::render(screen_quad);
+
+		// Screen pass
+		// Set render target back to the screen
+		renderer::set_render_target();
+		// Clear frame
+		renderer::bind(basicTextureEffect);
+		// Set MVP matrix uniform
+		glUniformMatrix4fv(basicTextureEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+		// Bind texture from frame buffer
+		renderer::bind(frames[current_frame].get_frame(), 3);
+		// Set the uniform
+		glUniform1i(basicTextureEffect.get_uniform_location("tex"), 3);
+		// Render the screen quad
+		renderer::render(screen_quad);	
+}
+
+bool render() {
+
+	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
+
+	if (shouldRenderShadows)
+	{
+		// Render Shadows
+		renderShadows(lightProjectionMatrix);
+	}
+
+	renderSceneToTarget(lightProjectionMatrix);
+	renderBufferToTarget();
 	return true;
 }
 

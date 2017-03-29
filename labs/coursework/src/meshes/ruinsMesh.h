@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createRuinsMesh()
+inline mesh createRuinsMesh()
 {
 	auto ruins = mesh(geometry("models/ruin.obj"));
 	ruins.get_transform().translate(vec3(50, 50, 45));
