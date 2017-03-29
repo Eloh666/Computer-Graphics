@@ -26,8 +26,10 @@
 #include "meshes/ruinsMesh.h"
 #include "effects/instanceBasedEff.h"
 #include "postProcessing/postProcessing.h"
+#include "particles/particles.h"
 
 using namespace std;
+using namespace std::chrono;
 using namespace graphics_framework;
 using namespace glm;
 
@@ -100,6 +102,16 @@ unsigned int current_frame = 0;
 geometry screen_quad;
 float motionBlurCoeff = 0;
 
+// rainData
+const unsigned int MAX_PARTICLES = 2 << 11;
+
+vec4 positions[MAX_PARTICLES];
+vec4 velocitys[MAX_PARTICLES];
+GLuint G_Position_buffer, G_Velocity_buffer;
+effect rainEffect;
+effect compute_eff;
+GLuint vao;
+
 bool load_content() {
 
 	// initis motion blur required params
@@ -112,6 +124,42 @@ bool load_content() {
 	temp_frame = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 	motionBlurEffect = createMotionBlurEffect();
 	basicTextureEffect = createBasicTexturingEffect();
+
+	//init rain data
+	cout << "Generating " << MAX_PARTICLES << " Particles" << endl;
+	default_random_engine rand(duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+	uniform_real_distribution<float> dist;
+	// a useless vao, but we need it bound or we get errors.
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	// *********************************
+	//Generate Position Data buffer
+	glGenBuffers(1, &G_Position_buffer);
+	// Bind as GL_SHADER_STORAGE_BUFFER
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, G_Position_buffer);
+	// Send Data to GPU, use GL_DYNAMIC_DRAW
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vec4) * MAX_PARTICLES, positions, GL_DYNAMIC_DRAW);
+
+	// Generate Velocity Data buffer
+	glGenBuffers(1, &G_Velocity_buffer);
+	// Bind as GL_SHADER_STORAGE_BUFFER
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, G_Velocity_buffer);
+	// Send Data to GPU, use GL_DYNAMIC_DRAW
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vec4) * MAX_PARTICLES, velocitys, GL_DYNAMIC_DRAW);
+	// *********************************    
+	//Unbind
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	// Initilise particles
+	for (unsigned int i = 0; i < MAX_PARTICLES; ++i) {
+		positions[i] = vec4(((14.0f * dist(rand)) - 7.0f), 8.0f * dist(rand), 0.0f, 0.0f);
+		velocitys[i] = vec4(0.0f, 0.1f + (2.0f * dist(rand)), 0.0f, 0.0f);
+	}
+
+
+	compute_eff = createRainComputeShader();
+	rainEffect = createBasicRainEffect();
+	
 
 	// amillary ring
 	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
@@ -384,6 +432,11 @@ void handleUserInput(float delta_time)
 }
 
 bool update(float delta_time) {
+
+	// update rain data
+	renderer::bind(compute_eff);
+	glUniform1f(compute_eff.get_uniform_location("delta_time"), delta_time);
+	glUniform3fv(compute_eff.get_uniform_location("max_dims"), 1, value_ptr(vec3(7.0f, 8.0f, 5.0f)));
 
 	// userBindings
 	handleUserInput(delta_time);
@@ -660,13 +713,61 @@ void renderShadows(mat4 lightProjectionMatrix)
 	glCullFace(GL_BACK);
 }
 
-void renderSceneToTarget(mat4 &lightProjectionMatrix)
+void renderParticleRain()
 {
+	// Bind Compute Shader
+	renderer::bind(compute_eff);
+	// Bind data as SSBO
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, G_Position_buffer);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, G_Velocity_buffer);
+	// Dispatch
+	glDispatchCompute(MAX_PARTICLES / 128, 1, 1);
+	// Sync, wait for completion
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	// Bind render effect
+	renderer::bind(rainEffect);
+	// Create MVP matrix
+	mat4 M(1.0f);
+	auto V = activeCam->get_view();
+	auto P = activeCam->get_projection();
+	auto MVP = P * V * M;
+	// Set the colour uniform
+	glUniform4fv(rainEffect.get_uniform_location("colour"), 1, value_ptr(vec4(1.0f)));
+	// Set MVP matrix uniform
+	glUniformMatrix4fv(rainEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+
+	// Bind position buffer as GL_ARRAY_BUFFER
+	glBindBuffer(GL_ARRAY_BUFFER, G_Position_buffer);
+	// Setup vertex format
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, (void *)0);
+	// Render
+	glDrawArrays(GL_POINTS, 0, MAX_PARTICLES);
+	// Tidy up
+	glDisableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glUseProgram(0);
+}
+
+
+void renderSceneToTarget()
+{
+	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
+
+	if (shouldRenderShadows)
+	{
+		// Render Shadows
+		renderShadows(lightProjectionMatrix);
+	}
 	// select render target
 	renderer::set_render_target(temp_frame);
 	// clear renderer
 	renderer::clear();
 
+	// Render rain
+	//renderParticleRain();
 	// Render skybox
 	renderSkybox();
 	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal", lightProjectionMatrix);
@@ -682,7 +783,7 @@ void renderSceneToTarget(mat4 &lightProjectionMatrix)
 	}
 }
 
-void renderBufferToTarget()
+void renderScreenBuffer()
 {
 		// Frame pass
 		renderer::set_render_target(frames[current_frame]);
@@ -723,16 +824,8 @@ void renderBufferToTarget()
 
 bool render() {
 
-	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
-
-	if (shouldRenderShadows)
-	{
-		// Render Shadows
-		renderShadows(lightProjectionMatrix);
-	}
-
-	renderSceneToTarget(lightProjectionMatrix);
-	renderBufferToTarget();
+	renderSceneToTarget();
+	renderScreenBuffer();
 	return true;
 }
 
