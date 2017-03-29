@@ -25,7 +25,7 @@
 #include "meshes/statueMesh.h"
 #include "meshes/ruinsMesh.h"
 #include "effects/instanceBasedEff.h"
-#include "postProcessing/motionBlur.h"
+#include "postProcessing/postProcessing.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -104,18 +104,12 @@ bool load_content() {
 
 	// initis motion blur required params
 	// initFrames
+	initScreenQuad(screen_quad);
 	// Create 2 frame buffers - use screen width and height
 	frames[0] = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 	frames[1] = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 	// Create a temp framebuffer
 	temp_frame = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
-	// Create screen quad
-	vector<vec3> positions{ vec3(-1.0f, -1.0f, 0.0f), vec3(1.0f, -1.0f, 0.0f), vec3(-1.0f, 1.0f, 0.0f),
-		vec3(1.0f, 1.0f, 0.0f) };
-	vector<vec2> tex_coords{ vec2(0.0, 0.0), vec2(1.0f, 0.0f), vec2(0.0f, 1.0f), vec2(1.0f, 1.0f) };
-	screen_quad.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
-	screen_quad.add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
-	screen_quad.set_type(GL_TRIANGLE_STRIP);
 	motionBlurEffect = createMotionBlurEffect();
 	basicTextureEffect = createBasicTexturingEffect();
 
@@ -374,13 +368,17 @@ void handleUserInput(float delta_time)
 	}
 
 	// handles motion blurStatus
-
-	if (glfwGetKey(renderer::get_window(), 'N')) {
+	// none
+	if (glfwGetKey(renderer::get_window(), 'B')) {
 		motionBlurCoeff = 0;
 	}
-
+	// medium
+	if (glfwGetKey(renderer::get_window(), 'N')) {
+		motionBlurCoeff = 0.65;
+	}
+	// on drugs
 	if (glfwGetKey(renderer::get_window(), 'M')) {
-		motionBlurCoeff = 0.75;
+		motionBlurCoeff = 0.9;
 	}
 
 }
