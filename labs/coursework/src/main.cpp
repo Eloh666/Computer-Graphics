@@ -29,7 +29,7 @@
 #include "particles/particles.h"
 
 using namespace std;
-using namespace std::chrono;
+using namespace chrono;
 using namespace graphics_framework;
 using namespace glm;
 
@@ -103,7 +103,7 @@ geometry screen_quad;
 float motionBlurCoeff = 0;
 
 // rainData
-const unsigned int MAX_PARTICLES = 2 << 11;
+const unsigned long MAX_PARTICLES = 2 << 20;
 
 vec4 positions[MAX_PARTICLES];
 vec4 velocitys[MAX_PARTICLES];
@@ -113,7 +113,7 @@ effect compute_eff;
 GLuint vao;
 
 bool load_content() {
-
+	renderer::setClearColour(0, 0, 0);
 	// initis motion blur required params
 	// initFrames
 	initScreenQuad(screen_quad);
@@ -125,10 +125,32 @@ bool load_content() {
 	motionBlurEffect = createMotionBlurEffect();
 	basicTextureEffect = createBasicTexturingEffect();
 
+
 	//init rain data
-	cout << "Generating " << MAX_PARTICLES << " Particles" << endl;
 	default_random_engine rand(duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
-	uniform_real_distribution<float> dist;
+	// Initilise particles
+	for (unsigned int i = 0; i < MAX_PARTICLES; ++i) {
+		int randX = (rand() % 800);
+		int randY = rand() % 800;
+		int randZ = (rand() % 800);
+		switch(i%4)
+		{
+		case 0:
+			randX *= -1;
+			break;
+		case 1:
+			randZ *= -1;
+			break;
+		case 2:
+			randX *= -1;
+			randZ *= -1;
+		}
+		positions[i] = vec4(randX, randY, randZ, 0.0f);
+		int randSpeedY = -(rand() % 100 + 10);
+		int randSpeedXZ = (rand() % 9 + 1);
+		velocitys[i] = vec4(randSpeedXZ, randSpeedY, randSpeedXZ, 0.0f);
+	}
+
 	// a useless vao, but we need it bound or we get errors.
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -150,11 +172,6 @@ bool load_content() {
 	//Unbind
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-	// Initilise particles
-	for (unsigned int i = 0; i < MAX_PARTICLES; ++i) {
-		positions[i] = vec4(((14.0f * dist(rand)) - 7.0f), 8.0f * dist(rand), 0.0f, 0.0f);
-		velocitys[i] = vec4(0.0f, 0.1f + (2.0f * dist(rand)), 0.0f, 0.0f);
-	}
 
 
 	compute_eff = createRainComputeShader();
@@ -300,6 +317,12 @@ bool load_content() {
 	normal_maps["deadTree"] = texture("textures/deadTreeNorm.jpg", false, true);
 	effects["deadTree"] = createNormalMapEffect();
 
+
+	meshes["z"] = createDeadTreeMesh();
+	textures["z"] = texture("textures/deadTree.jpg", false, true);
+	normal_maps["z"] = texture("textures/deadTreeNorm.jpg", false, true);
+	effects["z"] = createNormalMapEffect();
+
 	// Set sets up lightning values
 	light.set_ambient_intensity(vec4(0, 0, 0, 0));
 	light.set_direction(normalize(meshes["boat"].get_transform().position));
@@ -342,6 +365,9 @@ void handleUserInput(float delta_time)
 	// activates free cam
 	if (glfwGetKey(renderer::get_window(), 'F')) {
 		activeCam = &freeCam;
+		std::cout << freeCam.get_position().x << endl;
+		std::cout << freeCam.get_position().y << endl;
+		std::cout << freeCam.get_position().z << endl;
 	}
 	// activates chase cam
 	if (glfwGetKey(renderer::get_window(), 'C')) {
@@ -436,7 +462,7 @@ bool update(float delta_time) {
 	// update rain data
 	renderer::bind(compute_eff);
 	glUniform1f(compute_eff.get_uniform_location("delta_time"), delta_time);
-	glUniform3fv(compute_eff.get_uniform_location("max_dims"), 1, value_ptr(vec3(7.0f, 8.0f, 5.0f)));
+	glUniform3fv(compute_eff.get_uniform_location("max_dims"), 1, value_ptr(vec3(1600.0f, 400.0f, 1600.0f)));
 
 	// userBindings
 	handleUserInput(delta_time);
@@ -462,7 +488,7 @@ bool update(float delta_time) {
 	// Debris cloud
 	// Small floaters
 	rotationPosition = vec3(cos(rotationAngle)*15.0f, 0, sin(rotationAngle)*15.0f);
-	for (int i = 0; i < rotatingFloaterNumDebris; i++)
+	for (auto i = 0; i < rotatingFloaterNumDebris; i++)
 	{
 		float diff = -1 * ((i % 2) + 1);
 		generalDebrisRotatingDebris[i] = translate(generalDebrisOriginalTransforms[i], rotationPosition * diff);
@@ -733,8 +759,10 @@ void renderParticleRain()
 	auto V = activeCam->get_view();
 	auto P = activeCam->get_projection();
 	auto MVP = P * V * M;
+
 	// Set the colour uniform
-	glUniform4fv(rainEffect.get_uniform_location("colour"), 1, value_ptr(vec4(1.0f)));
+	glUniform4fv(rainEffect.get_uniform_location("colour"), 1, value_ptr(vec4(0.25f, 0.31f, 0.91f, 1)));
+	glUniform3fv(rainEffect.get_uniform_location("cameraPosition"), 1, value_ptr(activeCam->get_position()));
 	// Set MVP matrix uniform
 	glUniformMatrix4fv(rainEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 
@@ -742,7 +770,7 @@ void renderParticleRain()
 	glBindBuffer(GL_ARRAY_BUFFER, G_Position_buffer);
 	// Setup vertex format
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, (void *)0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(nullptr));
 	// Render
 	glDrawArrays(GL_POINTS, 0, MAX_PARTICLES);
 	// Tidy up
@@ -766,8 +794,6 @@ void renderSceneToTarget()
 	// clear renderer
 	renderer::clear();
 
-	// Render rain
-	//renderParticleRain();
 	// Render skybox
 	renderSkybox();
 	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal", lightProjectionMatrix);
@@ -781,6 +807,8 @@ void renderSceneToTarget()
 		effect eff = effects[meshName];
 		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
+	//Render rain
+	renderParticleRain();
 }
 
 void renderScreenBuffer()
