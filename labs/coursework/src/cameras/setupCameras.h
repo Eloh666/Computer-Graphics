@@ -8,14 +8,14 @@ using namespace glm;
 
 float viewPortSize = 3000.0f;
 
-void setupFreeCam(free_camera &freeCam)
+inline void setupFreeCam(free_camera &freeCam)
 {
 	freeCam.set_position(vec3(415, 65, -215));
 	freeCam.set_target(vec3(100, 100, 100));
 	freeCam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, viewPortSize);
 }
 
-void setupChaseCamera(chase_camera &camera, mesh modelToFollow)
+inline void setupChaseCamera(chase_camera &camera, mesh modelToFollow)
 {
 	camera.set_pos_offset(vec3(0.0f, 2.0f, 50.0f));
 	camera.set_springiness(0.3f);
@@ -24,7 +24,7 @@ void setupChaseCamera(chase_camera &camera, mesh modelToFollow)
 
 }
 
-void setupTargetCameras(vector<target_camera> &cameras, map<string, mesh> meshes)
+inline void setupTargetCameras(vector<target_camera> &cameras, map<string, mesh> meshes)
 {
 	// katana
 	cameras[0].set_position(vec3(30, 50, 8));
@@ -57,7 +57,7 @@ void setupTargetCameras(vector<target_camera> &cameras, map<string, mesh> meshes
 	cameras[5].set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, viewPortSize);
 }
 
-void handleFreeCameraMovement(free_camera &freeCam, float delta_time, vec3 &translation)
+inline void handleFreeCameraMovement(free_camera &freeCam, float delta_time, vec3 &translation)
 {
 
 	static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
@@ -84,7 +84,7 @@ void handleFreeCameraMovement(free_camera &freeCam, float delta_time, vec3 &tran
 	cursor_y = current_y;
 }
 
-void handleChaseCameraMovement(chase_camera &camera, float delta_time, mesh modelToFollow)
+inline void handleChaseCameraMovement(chase_camera &camera, float delta_time, mesh modelToFollow)
 {
 	static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
 	static double ratio_height =

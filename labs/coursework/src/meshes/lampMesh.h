@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createLampMesh()
+inline mesh createLampMesh()
 {
 	auto lamp = mesh(geometry("models/lamp.obj"));
 	lamp.get_transform().scale = vec3(1.2, 1.2, 1.2);

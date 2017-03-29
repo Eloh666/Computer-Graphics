@@ -5,7 +5,7 @@ using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
-effect createShadowEffect()
+inline effect createShadowEffect()
 {
 
 	effect eff;

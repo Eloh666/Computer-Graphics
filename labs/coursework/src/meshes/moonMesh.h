@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createMoonMesh()
+inline mesh createMoonMesh()
 {
 	auto moon = mesh(geometry("models/moon.obj"));
 	moon.get_transform().scale = vec3(0.75f, 0.75f, 0.75f);

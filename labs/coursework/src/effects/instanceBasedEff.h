@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-effect createMultiInstanceEffect()
+inline effect createMultiInstanceEffect()
 {
 	effect eff;
 	eff.add_shader("shaders/multi_instance_shader.vert", GL_VERTEX_SHADER);
@@ -21,7 +21,7 @@ effect createMultiInstanceEffect()
 	return eff;
 }
 
-effect createMultiInstanceRemoveAlphaEffect()
+inline effect createMultiInstanceRemoveAlphaEffect()
 {
 	effect eff;
 	eff.add_shader("shaders/multi_instance_shader.vert", GL_VERTEX_SHADER);

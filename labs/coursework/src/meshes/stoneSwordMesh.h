@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createStoneSwordMesh()
+inline mesh createStoneSwordMesh()
 {
 	auto statue = mesh(geometry("models/stoneSword.obj"));
 	statue.get_transform().translate(vec3(189, 150, 189));

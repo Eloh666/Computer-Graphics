@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-void initPointLights(vector<point_light> &points)
+inline void initPointLights(vector<point_light> &points)
 {
 	// boat lantern
 	points[0].set_position(vec3(131, 25, -90));
@@ -38,7 +38,7 @@ void initPointLights(vector<point_light> &points)
 	points[5].set_range(155);
 }
 
-void initSpotLights(vector<spot_light> &spots)
+inline void initSpotLights(vector<spot_light> &spots)
 {
 	// spot onto the moon surface
 	spots[0].set_position(vec3(-300, 365, 290));

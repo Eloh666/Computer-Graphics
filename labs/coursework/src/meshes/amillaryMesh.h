@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createAmillaryMesh()
+inline mesh createAmillaryMesh()
 {
 	auto amillaryBody = mesh(geometry("models/amillary.obj"));
 	amillaryBody.get_transform().translate(vec3(150, 100, 0));
@@ -18,7 +18,7 @@ mesh createAmillaryMesh()
 	return amillaryBody;
 }
 
-void generateAmillaryRings(vector<mat4> &modelMatrices, mat4 corePos, float rotationCoefficient)
+inline void generateAmillaryRings(vector<mat4> &modelMatrices, mat4 corePos, float rotationCoefficient)
 {
 	// individual rotation for each ring
 	vector<vec3> rotations{

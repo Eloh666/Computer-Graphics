@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-effect createMovingWaterEffect()
+inline effect createMovingWaterEffect()
 {
 	effect eff;
 	eff.add_shader("shaders/moving_water.vert", GL_VERTEX_SHADER);

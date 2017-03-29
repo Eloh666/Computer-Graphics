@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createMossyRockMesh()
+inline mesh createMossyRockMesh()
 {
 	auto statue = mesh(geometry("models/mossyRock.obj"));
 	statue.get_transform().translate(vec3(175, 8.5, -10));

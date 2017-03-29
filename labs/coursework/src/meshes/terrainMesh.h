@@ -6,7 +6,7 @@ using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
-mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale) {
+inline mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale) {
 
 	geometry geom;
 

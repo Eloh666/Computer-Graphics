@@ -8,7 +8,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createWaterMesh()
+inline mesh createWaterMesh()
 {
 
 	const texture height_map("textures/waterHM.jpg");

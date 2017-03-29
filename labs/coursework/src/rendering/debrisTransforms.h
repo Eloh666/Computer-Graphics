@@ -10,7 +10,7 @@ using namespace glm;
 
 // Generates the transformation for the debris field
 // NOTE: This code is (a slighly modified) part of an instanciation tutorial. I take no credit for it.
-void createFloatersTransforms(vector<mat4> &modelMatrices, int amount, vec3 fulcrum, float scaleSize)
+inline void createFloatersTransforms(vector<mat4> &modelMatrices, int amount, vec3 fulcrum, float scaleSize)
 {
 	// Generate a large list of semi-random model transformation matrices
 

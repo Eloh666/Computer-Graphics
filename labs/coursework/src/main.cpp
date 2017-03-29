@@ -25,6 +25,7 @@
 #include "meshes/statueMesh.h"
 #include "meshes/ruinsMesh.h"
 #include "effects/instanceBasedEff.h"
+#include "postProcessing/motionBlur.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -56,6 +57,8 @@ map<string, effect> effects;
 effect skyboxEffect;
 effect treeEffect;
 effect multiIstanceNormalEffect;
+effect motionBlurEffect;
+effect basicTextureEffect;
 
 // textures
 map<string, texture> textures;
@@ -90,7 +93,31 @@ shadow_map shadow;
 effect shadowEff;
 bool shouldRenderShadows;
 
+// frame data and post-processing
+frame_buffer frames[2];
+frame_buffer temp_frame;
+unsigned int current_frame = 0;
+geometry screen_quad;
+float motionBlurCoeff = 0;
+
 bool load_content() {
+
+	// initis motion blur required params
+	// initFrames
+	// Create 2 frame buffers - use screen width and height
+	frames[0] = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+	frames[1] = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+	// Create a temp framebuffer
+	temp_frame = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+	// Create screen quad
+	vector<vec3> positions{ vec3(-1.0f, -1.0f, 0.0f), vec3(1.0f, -1.0f, 0.0f), vec3(-1.0f, 1.0f, 0.0f),
+		vec3(1.0f, 1.0f, 0.0f) };
+	vector<vec2> tex_coords{ vec2(0.0, 0.0), vec2(1.0f, 0.0f), vec2(0.0f, 1.0f), vec2(1.0f, 1.0f) };
+	screen_quad.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
+	screen_quad.add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
+	screen_quad.set_type(GL_TRIANGLE_STRIP);
+	motionBlurEffect = createMotionBlurEffect();
+	basicTextureEffect = createBasicTexturingEffect();
 
 	// amillary ring
 	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
@@ -251,11 +278,9 @@ bool load_content() {
 	return true;
 }
 
-bool update(float delta_time) {
 
-	// updates the water delta vector to mimick the movement
-	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
-
+void handleUserInput(float delta_time)
+{
 	// The ratio of pixels to rotation - remember the fov
 	// Use keyboard to move the camera - WASD
 	vec3 translation(0.0f, 0.0f, 0.0f);
@@ -347,6 +372,29 @@ bool update(float delta_time) {
 	{
 		handleChaseCameraMovement(chaseCamera, delta_time, meshes["amillary"]);
 	}
+
+	// handles motion blurStatus
+
+	if (glfwGetKey(renderer::get_window(), 'N')) {
+		motionBlurCoeff = 0;
+	}
+
+	if (glfwGetKey(renderer::get_window(), 'M')) {
+		motionBlurCoeff = 0.75;
+	}
+
+}
+
+bool update(float delta_time) {
+
+	// userBindings
+	handleUserInput(delta_time);
+
+	// Flip frame
+	current_frame = (current_frame + 1) % 2;
+
+	// updates the water delta vector to mimick the movement
+	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
 
 	// Update the camera
 	activeCam->update(delta_time);
@@ -614,15 +662,13 @@ void renderShadows(mat4 lightProjectionMatrix)
 	glCullFace(GL_BACK);
 }
 
-bool render() {
+void renderSceneToTarget(mat4 &lightProjectionMatrix)
+{
+	// select render target
+	renderer::set_render_target(temp_frame);
+	// clear renderer
+	renderer::clear();
 
-	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
-
-	if (shouldRenderShadows)
-	{
-		// Render Shadows
-		renderShadows(lightProjectionMatrix);
-	}
 	// Render skybox
 	renderSkybox();
 	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal", lightProjectionMatrix);
@@ -636,6 +682,59 @@ bool render() {
 		effect eff = effects[meshName];
 		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
+}
+
+void renderBufferToTarget()
+{
+		// Frame pass
+		renderer::set_render_target(frames[current_frame]);
+		// Clear frame
+		renderer::clear();
+		// Bind effect
+		renderer::bind(motionBlurEffect);
+		// MVP is now the identity matrix
+		auto MVP = mat4(1.0);
+		// Set MVP matrix uniform
+		glUniformMatrix4fv(motionBlurEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+		// Bind tempframe to TU 0.
+		renderer::bind(temp_frame.get_frame(), 0);
+		// Bind frames[(current_frame + 1) % 2] to TU 1.
+		renderer::bind(frames[(current_frame + 1) % 2].get_frame(), 1);
+		// Set tex uniforms
+		glUniform1i(motionBlurEffect.get_uniform_location("tex"), 0);
+		glUniform1i(motionBlurEffect.get_uniform_location("previous_frame"), 1);
+		// Set blend factor (0.9f)
+		glUniform1f(motionBlurEffect.get_uniform_location("blend_factor"), motionBlurCoeff);
+		// Render screen quad
+		renderer::render(screen_quad);
+
+		// Screen pass
+		// Set render target back to the screen
+		renderer::set_render_target();
+		// Clear frame
+		renderer::bind(basicTextureEffect);
+		// Set MVP matrix uniform
+		glUniformMatrix4fv(basicTextureEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+		// Bind texture from frame buffer
+		renderer::bind(frames[current_frame].get_frame(), 3);
+		// Set the uniform
+		glUniform1i(basicTextureEffect.get_uniform_location("tex"), 3);
+		// Render the screen quad
+		renderer::render(screen_quad);	
+}
+
+bool render() {
+
+	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
+
+	if (shouldRenderShadows)
+	{
+		// Render Shadows
+		renderShadows(lightProjectionMatrix);
+	}
+
+	renderSceneToTarget(lightProjectionMatrix);
+	renderBufferToTarget();
 	return true;
 }
 

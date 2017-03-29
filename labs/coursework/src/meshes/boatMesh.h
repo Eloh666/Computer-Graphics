@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createBoatMesh()
+inline mesh createBoatMesh()
 {
 	auto boat = mesh(geometry("models/boat.obj"));
 	boat.get_transform().scale = vec3(10.75f, 10.75f, 10.75f);

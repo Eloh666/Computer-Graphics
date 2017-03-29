@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createKatanaMesh()
+inline mesh createKatanaMesh()
 {
 	auto katana = mesh(geometry("models/katana.obj"));
 	katana.get_transform().scale = vec3(0.1f, 0.1f, 0.1f);

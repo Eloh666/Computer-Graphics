@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-mesh createVioletTreeMesh()
+inline mesh createVioletTreeMesh()
 {
 	auto tree = mesh(geometry("models/violet.obj"));
 	tree.get_transform().scale = vec3(2.0, 1.0, 2.0);
@@ -19,7 +19,7 @@ mesh createVioletTreeMesh()
 	return tree;
 }
 
-mesh createDeadTreeMesh()
+inline mesh createDeadTreeMesh()
 {
 	auto tree = mesh(geometry("models/deadTree.obj"));
 	tree.get_transform().scale = vec3(0.005, 0.005, 0.005);
@@ -32,7 +32,7 @@ mesh createDeadTreeMesh()
 	return tree;
 }
 
-mesh createTreeMesh()
+inline mesh createTreeMesh()
 {
 	auto tree = mesh(geometry("models/tree.obj"));
 	tree.get_material().set_emissive(vec4(0.01f, 0.01f, 0.01f, 0.1f));
@@ -42,7 +42,7 @@ mesh createTreeMesh()
 	return tree;
 }
 
-void generateTreesTransforms(vector<mat4> &transforms)
+inline void generateTreesTransforms(vector<mat4> &transforms)
 {
 	auto locations = vector<vec3>{
 		vec3(285, 56, 89),

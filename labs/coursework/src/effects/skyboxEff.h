@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-effect createSkyboxEffect()
+inline effect createSkyboxEffect()
 {
 	effect eff;
 	eff.add_shader("shaders/skybox.vert", GL_VERTEX_SHADER);

@@ -7,7 +7,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 
-effect createNormalMapEffect()
+inline effect createNormalMapEffect()
 {
 	effect eff;
 	eff.add_shader("shaders/normal_map.vert", GL_VERTEX_SHADER);
