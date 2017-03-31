@@ -26,8 +26,10 @@
 #include "meshes/ruinsMesh.h"
 #include "effects/instanceBasedEff.h"
 #include "postProcessing/postProcessing.h"
+#include "particles/particles.h"
 
 using namespace std;
+using namespace chrono;
 using namespace graphics_framework;
 using namespace glm;
 
@@ -100,8 +102,18 @@ unsigned int current_frame = 0;
 geometry screen_quad;
 float motionBlurCoeff = 0;
 
-bool load_content() {
+// rainData
+const unsigned long MAX_PARTICLES = 2 << 16;
 
+vec4 positions[MAX_PARTICLES];
+vec4 velocitys[MAX_PARTICLES];
+GLuint G_Position_buffer, G_Velocity_buffer;
+effect rainEffect;
+effect compute_eff;
+GLuint vao;
+
+bool load_content() {
+	renderer::setClearColour(0, 0, 0);
 	// initis motion blur required params
 	// initFrames
 	initScreenQuad(screen_quad);
@@ -112,6 +124,60 @@ bool load_content() {
 	temp_frame = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 	motionBlurEffect = createMotionBlurEffect();
 	basicTextureEffect = createBasicTexturingEffect();
+
+	textures["clearWater"] = texture("textures/clearWater.jpg", false, true);
+
+
+	//init rain data
+	default_random_engine rand(duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+	// Initilise particles
+	for (unsigned int i = 0; i < MAX_PARTICLES; ++i) {
+		int randX = (rand() % 800);
+		int randY = rand() % 800;
+		int randZ = (rand() % 800);
+		switch(i%4)
+		{
+		case 0:
+			randX *= -1;
+			break;
+		case 1:
+			randZ *= -1;
+			break;
+		case 2:
+			randX *= -1;
+			randZ *= -1;
+		}
+		positions[i] = vec4(randX, randY, randZ, 0.0f);
+		int randSpeedY = -(rand() % 100 + 100);
+		velocitys[i] = vec4(0, randSpeedY, 0, 0.0f);
+	}
+
+	// a useless vao, but we need it bound or we get errors.
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	// *********************************
+	//Generate Position Data buffer
+	glGenBuffers(1, &G_Position_buffer);
+	// Bind as GL_SHADER_STORAGE_BUFFER
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, G_Position_buffer);
+	// Send Data to GPU, use GL_DYNAMIC_DRAW
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vec4) * MAX_PARTICLES, positions, GL_DYNAMIC_DRAW);
+
+	// Generate Velocity Data buffer
+	glGenBuffers(1, &G_Velocity_buffer);
+	// Bind as GL_SHADER_STORAGE_BUFFER
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, G_Velocity_buffer);
+	// Send Data to GPU, use GL_DYNAMIC_DRAW
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vec4) * MAX_PARTICLES, velocitys, GL_DYNAMIC_DRAW);
+	// *********************************    
+	//Unbind
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+
+
+	compute_eff = createRainComputeShader();
+	rainEffect = createBasicRainEffect();
+	
 
 	// amillary ring
 	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
@@ -133,6 +199,7 @@ bool load_content() {
 	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale);
 	//meshes["terrain"].get_material().set_specular(vec4(0.57, 0.3, 0.1, 0.3));
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
+	meshes["terrain"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
 	textures["terrainZero"] = texture("textures/sand.jpg", false, true);
 	textures["terrainSand"] = texture("textures/sgrass.jpg", false, true);
@@ -252,6 +319,10 @@ bool load_content() {
 	normal_maps["deadTree"] = texture("textures/deadTreeNorm.jpg", false, true);
 	effects["deadTree"] = createNormalMapEffect();
 
+	meshes["waterLantern"] = createLampMesh();
+	textures["waterLantern"] = texture("textures/lampDiff.png", false, true);
+	effects["waterLantern"] = createMultiLightEffect();
+
 	// Set sets up lightning values
 	light.set_ambient_intensity(vec4(0, 0, 0, 0));
 	light.set_direction(normalize(meshes["boat"].get_transform().position));
@@ -294,6 +365,9 @@ void handleUserInput(float delta_time)
 	// activates free cam
 	if (glfwGetKey(renderer::get_window(), 'F')) {
 		activeCam = &freeCam;
+		std::cout << freeCam.get_position().x << endl;
+		std::cout << freeCam.get_position().y << endl;
+		std::cout << freeCam.get_position().z << endl;
 	}
 	// activates chase cam
 	if (glfwGetKey(renderer::get_window(), 'C')) {
@@ -385,6 +459,11 @@ void handleUserInput(float delta_time)
 
 bool update(float delta_time) {
 
+	// update rain data
+	renderer::bind(compute_eff);
+	glUniform1f(compute_eff.get_uniform_location("delta_time"), delta_time);
+	glUniform3fv(compute_eff.get_uniform_location("max_dims"), 1, value_ptr(vec3(1600.0f, 400.0f, 1600.0f)));
+
 	// userBindings
 	handleUserInput(delta_time);
 
@@ -409,7 +488,7 @@ bool update(float delta_time) {
 	// Debris cloud
 	// Small floaters
 	rotationPosition = vec3(cos(rotationAngle)*15.0f, 0, sin(rotationAngle)*15.0f);
-	for (int i = 0; i < rotatingFloaterNumDebris; i++)
+	for (auto i = 0; i < rotatingFloaterNumDebris; i++)
 	{
 		float diff = -1 * ((i % 2) + 1);
 		generalDebrisRotatingDebris[i] = translate(generalDebrisOriginalTransforms[i], rotationPosition * diff);
@@ -660,8 +739,57 @@ void renderShadows(mat4 lightProjectionMatrix)
 	glCullFace(GL_BACK);
 }
 
-void renderSceneToTarget(mat4 &lightProjectionMatrix)
+void renderParticleRain()
 {
+	// Bind Compute Shader
+	renderer::bind(compute_eff);
+	// Bind data as SSBO
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, G_Position_buffer);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, G_Velocity_buffer);
+	// Dispatch
+	glDispatchCompute(MAX_PARTICLES / 128, 1, 1);
+	// Sync, wait for completion
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	// Bind render effect
+	renderer::bind(rainEffect);
+	// Create MVP matrix
+	mat4 M(1.0f);
+	auto V = activeCam->get_view();
+	auto P = activeCam->get_projection();
+	auto MVP = P * V * M;
+
+	// Set the colour uniform
+	renderer::bind(textures["clearWater"], 0);
+	glUniform1i(basicTextureEffect.get_uniform_location("tex"), 0);
+	glUniform3fv(rainEffect.get_uniform_location("cameraPosition"), 1, value_ptr(activeCam->get_position()));
+	// Set MVP matrix uniform
+	glUniformMatrix4fv(rainEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+
+	// Bind position buffer as GL_ARRAY_BUFFER
+	glBindBuffer(GL_ARRAY_BUFFER, G_Position_buffer);
+	//// Setup vertex format
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(nullptr));
+	// Render
+	glDrawArrays(GL_POINTS, 0, MAX_PARTICLES);
+	// Tidy up
+	glDisableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glUseProgram(0);
+}
+
+
+void renderSceneToTarget()
+{
+	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
+
+	if (shouldRenderShadows)
+	{
+		// Render Shadows
+		renderShadows(lightProjectionMatrix);
+	}
 	// select render target
 	renderer::set_render_target(temp_frame);
 	// clear renderer
@@ -680,9 +808,11 @@ void renderSceneToTarget(mat4 &lightProjectionMatrix)
 		effect eff = effects[meshName];
 		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
+	//Render rain
+	renderParticleRain();
 }
 
-void renderBufferToTarget()
+void renderScreenBuffer()
 {
 		// Frame pass
 		renderer::set_render_target(frames[current_frame]);
@@ -723,16 +853,8 @@ void renderBufferToTarget()
 
 bool render() {
 
-	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
-
-	if (shouldRenderShadows)
-	{
-		// Render Shadows
-		renderShadows(lightProjectionMatrix);
-	}
-
-	renderSceneToTarget(lightProjectionMatrix);
-	renderBufferToTarget();
+	renderSceneToTarget();
+	renderScreenBuffer();
 	return true;
 }
 

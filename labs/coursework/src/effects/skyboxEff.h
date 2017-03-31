@@ -14,6 +14,5 @@ inline effect createSkyboxEffect()
 	eff.add_shader("shaders/skybox.frag", GL_FRAGMENT_SHADER);
 	// Build effect
 	eff.build();
-	eff.build();
 	return eff;
 }
