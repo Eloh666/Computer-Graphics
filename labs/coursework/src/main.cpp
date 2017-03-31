@@ -61,6 +61,7 @@ effect treeEffect;
 effect multiIstanceNormalEffect;
 effect motionBlurEffect;
 effect basicTextureEffect;
+effect grassEffect;
 
 // textures
 map<string, texture> textures;
@@ -111,6 +112,9 @@ GLuint G_Position_buffer, G_Velocity_buffer;
 effect rainEffect;
 effect compute_eff;
 GLuint vao;
+
+// grassData
+vector<mat4> grassTransforms(MAX_PARTICLES);
 
 bool load_content() {
 	renderer::setClearColour(0, 0, 0);
@@ -173,10 +177,10 @@ bool load_content() {
 	//Unbind
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-
-
 	compute_eff = createRainComputeShader();
 	rainEffect = createBasicRainEffect();
+
+
 	
 
 	// amillary ring
@@ -342,7 +346,6 @@ bool load_content() {
 	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	return true;
 }
-
 
 void handleUserInput(float delta_time)
 {
@@ -780,7 +783,6 @@ void renderParticleRain()
 	glUseProgram(0);
 }
 
-
 void renderSceneToTarget()
 {
 	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
@@ -809,7 +811,7 @@ void renderSceneToTarget()
 		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
 	//Render rain
-	renderParticleRain();
+	//renderParticleRain();
 }
 
 void renderScreenBuffer()
@@ -849,6 +851,22 @@ void renderScreenBuffer()
 		glUniform1i(basicTextureEffect.get_uniform_location("tex"), 3);
 		// Render the screen quad
 		renderer::render(screen_quad);	
+}
+
+void renderGrass(effect eff, geometry geom)
+{
+	// Simply render the points.  All the work done in the geometry shader
+	renderer::bind(eff);
+	auto V = activeCam->get_view();
+	auto P = activeCam->get_projection();
+	auto MVP = P * V;
+	glUniformMatrix4fv(eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(V));
+	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
+	glUniform1f(eff.get_uniform_location("point_size"), 2.0f);
+	renderer::bind(textures["grass"], 0);
+	glUniform1i(eff.get_uniform_location("tex"), 0);
+
+	renderer::render(geom);
 }
 
 bool render() {

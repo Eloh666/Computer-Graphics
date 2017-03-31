@@ -8,7 +8,7 @@ layout (location = 1) out float distanceFromCamera;
 
 
 layout(points) in;
-layout(line_strip, max_vertices = 120) out;
+layout(line_strip, max_vertices = 100) out;
 
 void main()
 {
