@@ -317,11 +317,9 @@ bool load_content() {
 	normal_maps["deadTree"] = texture("textures/deadTreeNorm.jpg", false, true);
 	effects["deadTree"] = createNormalMapEffect();
 
-
-	meshes["z"] = createDeadTreeMesh();
-	textures["z"] = texture("textures/deadTree.jpg", false, true);
-	normal_maps["z"] = texture("textures/deadTreeNorm.jpg", false, true);
-	effects["z"] = createNormalMapEffect();
+	meshes["waterLantern"] = createLampMesh();
+	textures["waterLantern"] = texture("textures/lampDiff.png", false, true);
+	effects["waterLantern"] = createMultiLightEffect();
 
 	// Set sets up lightning values
 	light.set_ambient_intensity(vec4(0, 0, 0, 0));
@@ -768,7 +766,7 @@ void renderParticleRain()
 
 	// Bind position buffer as GL_ARRAY_BUFFER
 	glBindBuffer(GL_ARRAY_BUFFER, G_Position_buffer);
-	// Setup vertex format
+	//// Setup vertex format
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(nullptr));
 	// Render
