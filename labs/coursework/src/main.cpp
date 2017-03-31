@@ -103,7 +103,7 @@ geometry screen_quad;
 float motionBlurCoeff = 0;
 
 // rainData
-const unsigned long MAX_PARTICLES = 2 << 20;
+const unsigned long MAX_PARTICLES = 2 << 16;
 
 vec4 positions[MAX_PARTICLES];
 vec4 velocitys[MAX_PARTICLES];
@@ -124,6 +124,8 @@ bool load_content() {
 	temp_frame = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 	motionBlurEffect = createMotionBlurEffect();
 	basicTextureEffect = createBasicTexturingEffect();
+
+	textures["clearWater"] = texture("textures/clearWater.jpg", false, true);
 
 
 	//init rain data
@@ -146,9 +148,8 @@ bool load_content() {
 			randZ *= -1;
 		}
 		positions[i] = vec4(randX, randY, randZ, 0.0f);
-		int randSpeedY = -(rand() % 100 + 10);
-		int randSpeedXZ = (rand() % 9 + 1);
-		velocitys[i] = vec4(randSpeedXZ, randSpeedY, randSpeedXZ, 0.0f);
+		int randSpeedY = -(rand() % 100 + 100);
+		velocitys[i] = vec4(0, randSpeedY, 0, 0.0f);
 	}
 
 	// a useless vao, but we need it bound or we get errors.
@@ -198,6 +199,7 @@ bool load_content() {
 	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale);
 	//meshes["terrain"].get_material().set_specular(vec4(0.57, 0.3, 0.1, 0.3));
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
+	meshes["terrain"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
 	textures["terrainZero"] = texture("textures/sand.jpg", false, true);
 	textures["terrainSand"] = texture("textures/sgrass.jpg", false, true);
@@ -759,7 +761,8 @@ void renderParticleRain()
 	auto MVP = P * V * M;
 
 	// Set the colour uniform
-	glUniform4fv(rainEffect.get_uniform_location("colour"), 1, value_ptr(vec4(0.25f, 0.31f, 0.91f, 1)));
+	renderer::bind(textures["clearWater"], 0);
+	glUniform1i(basicTextureEffect.get_uniform_location("tex"), 0);
 	glUniform3fv(rainEffect.get_uniform_location("cameraPosition"), 1, value_ptr(activeCam->get_position()));
 	// Set MVP matrix uniform
 	glUniformMatrix4fv(rainEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
