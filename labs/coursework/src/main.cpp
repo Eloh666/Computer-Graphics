@@ -103,7 +103,7 @@ geometry screen_quad;
 float motionBlurCoeff = 0;
 
 // rainData
-const unsigned long MAX_PARTICLES = 2 << 16;
+const unsigned long MAX_PARTICLES = 2 << 13;
 
 vec4 positions[MAX_PARTICLES];
 vec4 velocitys[MAX_PARTICLES];
