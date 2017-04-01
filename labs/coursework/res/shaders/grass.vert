@@ -2,7 +2,6 @@
 #version 440
 // Model view projection matrix
 uniform mat4 MVP;
-uniform vec3 cameraPosition;
 
 // Incoming value for the position
 layout (location = 0) in vec3 position;

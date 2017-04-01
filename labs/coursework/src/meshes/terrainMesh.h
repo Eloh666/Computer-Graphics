@@ -1,12 +1,12 @@
+#pragma once
 #include <glm\glm.hpp>
 #include <graphics_framework.h>
-
 
 using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
-inline mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale) {
+inline mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale, geometry* grassLocations = nullptr) {
 
 	geometry geom;
 
@@ -24,7 +24,7 @@ inline mesh createTerrainMesh(const texture &height_map, unsigned int width, uns
 	// Extract the texture data from the image
 	glBindTexture(GL_TEXTURE_2D, height_map.get_id());
 	auto data = new vec4[height_map.get_width() * height_map.get_height()];
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, (void *)data);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, static_cast<void *>(data));
 
 	// Determine ratio of height map to geometry
 	float width_point = static_cast<float>(width) / static_cast<float>(height_map.get_width());
