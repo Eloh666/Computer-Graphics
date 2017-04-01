@@ -74,7 +74,7 @@ unsigned int current_frame = 0;
 geometry screen_quad;
 float motionBlurCoeff = 0;
 
-// rainData
+// Grass Data
 const unsigned long MAX_PARTICLES = 2 << 13;
 
 vec4 positions[MAX_PARTICLES];
@@ -84,15 +84,23 @@ effect rainEffect;
 effect compute_eff;
 GLuint vao;
 
+// Grass Data
+geometry grassGeom;
 
-bool load_content() {
+
+bool load_content()
+{
+	//// load the meshes
+	//loadMeshes(meshes);
+	//loadSpecialRenderMeshes(specialRenderMeshes);
+
+	// loads the textures inside their dictinaries
+	//loadTextures(textures);
+	//loadNormalMaps(normal_maps);
+	//loadAlphaMaps(alpha_maps);
 
 	// loads the effects
 	loadEffects(effects);
-
-	// load the meshes
-	loadMeshes(meshes);
-	loadSpecialRenderMeshes(specialRenderMeshes);
 
 	// init lights
 	initPointLights(points);
@@ -107,7 +115,14 @@ bool load_content() {
 	setupChaseCamera(chaseCamera, meshes["amillary"]);
 	activeCam = &freeCam;
 
+	//setup grass geometry
+	auto grassPositions = vector<vec3>{
+		vec3(405.0f, 80.0f, -285.0f)
+	};
 
+	grassGeom.add_buffer(grassPositions, BUFFER_INDEXES::POSITION_BUFFER);
+	grassGeom.set_type(GL_POINTS);
+	textures["grass"] = texture("textures/grass.png", false, true);
 
 	// initis motion blur required params
 	// initFrames
@@ -143,7 +158,7 @@ bool load_content() {
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["terrain"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
-	
+
 
 	// Generates the night skyboxss
 	array<string, 6> filenames = { "textures/skybox/starfield_ft.tga", "textures/skybox/starfield_bk.tga", "textures/skybox/starfield_up.tga",
@@ -161,11 +176,6 @@ bool load_content() {
 
 	// Setup cursor
 	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-	// loads the textures inside their dictinaries
-	loadTextures(textures);
-	loadNormalMaps(normal_maps);
-	loadAlphaMaps(alpha_maps);
 
 	return true;
 }
@@ -698,10 +708,27 @@ void renderScreenBuffer()
 	renderer::render(screen_quad);
 }
 
+void renderPoints(effect eff, geometry geom, texture tex)
+{
+	// Simply render the points.  All the work done in the geometry shader
+	renderer::bind(eff);
+	auto V = activeCam->get_view();
+	auto P = activeCam->get_projection();
+	auto MVP = P * V;
+	glUniformMatrix4fv(eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(V));
+	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
+	glUniform1f(eff.get_uniform_location("point_size"), 2.0f);
+	renderer::bind(tex, 0);
+	glUniform1i(eff.get_uniform_location("tex"), 0);
+
+	renderer::render(geom);
+}
+
 bool render() {
 
-	renderSceneToTarget();
-	renderScreenBuffer();
+	//renderSceneToTarget();
+	//renderScreenBuffer();
+	renderPoints(effects["grass"], grassGeom, textures["grass"]);
 	return true;
 }
 

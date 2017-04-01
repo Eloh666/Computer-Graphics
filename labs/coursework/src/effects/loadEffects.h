@@ -20,7 +20,6 @@ inline void loadEffects(map<string, effect> &effects)
 {
 	effects["motionBlur"] = createMotionBlurEffect();
 	effects["basicTexturing"] = createBasicTexturingEffect();
-	effects["grass"] = createGrassEffect();
 	effects["terrain"] = createTerrainEffect();
 	effects["waterBase"] = createMovingWaterEffect();
 	effects["skybox"] = createSkyboxEffect();
@@ -40,4 +39,5 @@ inline void loadEffects(map<string, effect> &effects)
 	effects["stoneSword"] = createNormalMapEffect();
 	effects["deadTree"] = createNormalMapEffect();
 	effects["waterLantern"] = createMultiLightEffect();
+	effects["grass"] = createGrassEffect();
 }
