@@ -1,12 +1,12 @@
+#pragma once
 #include <glm\glm.hpp>
 #include <graphics_framework.h>
-
 
 using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
-inline mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale, vector<vec3>* grassLocations = nullptr) {
+inline mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale, geometry* grassLocations = nullptr) {
 
 	geometry geom;
 
@@ -135,20 +135,6 @@ inline mesh createTerrainMesh(const texture &height_map, unsigned int width, uns
 			// Add tex weight to weights
 			tex_weights.push_back(tex_weight);
 			// *********************************
-		}
-	}
-
-	// Part 5 - Get the coordinates for grass, if needed
-	if(grassLocations)
-	{
-		float minGrassRange = height_map.get_height() * 0.5;
-		float maxGrassRange = height_map.get_height() * 0.75;
-		for(auto vertex : positions)
-		{
-			if(vertex.y >= minGrassRange && vertex.y <= maxGrassRange)
-			{
-				(*grassLocations).push_back(vertex);
-			}
 		}
 	}
 

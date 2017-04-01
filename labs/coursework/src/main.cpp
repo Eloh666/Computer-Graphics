@@ -1,32 +1,14 @@
+#pragma once
 #include <glm\glm.hpp>
 #include <graphics_framework.h>
-#include "meshes/katanaMesh.h"
 #include "meshes/terrainMesh.h"
-#include "effects/terrainEff.h"
-#include "meshes/skyboxMesh.h"
-#include "effects/skyboxEff.h"
-#include "meshes/grassMesh.h"
-#include "effects/normalMapEff.h"
-#include "effects/multiLightEff.h"
-#include "meshes/moonMesh.h"
-#include "meshes/boatMesh.h"
-#include "meshes/lampMesh.h"
-#include "meshes/graveMesh.h"
-#include "meshes/waterMesh.h"
-#include "meshes/mossRockMesh.h"
-#include "meshes/stoneSwordMesh.h"
-#include "meshes/stoneGuardMesh.h"
-#include "effects/movingWaterEff.h"
 #include "rendering/debrisTransforms.h"
-#include "meshes/treeMesh.h"
 #include "lights/setupLights.h"
 #include "cameras/setupCameras.h"
-#include "meshes/amillaryMesh.h"
-#include "meshes/statueMesh.h"
-#include "meshes/ruinsMesh.h"
-#include "effects/instanceBasedEff.h"
-#include "postProcessing/postProcessing.h"
 #include "particles/particles.h"
+#include "textures/loadTextures.h"
+#include "effects/loadEffects.h"
+#include "meshes/loadMeshes.h"
 
 using namespace std;
 using namespace chrono;
@@ -48,20 +30,10 @@ chase_camera chaseCamera;
 
 // meshes
 map<string, mesh> meshes;
-
-mesh trees;
-mesh skybox;
-mesh crystal;
+map<string, mesh> specialRenderMeshes;
 
 //effects
 map<string, effect> effects;
-
-effect skyboxEffect;
-effect treeEffect;
-effect multiIstanceNormalEffect;
-effect motionBlurEffect;
-effect basicTextureEffect;
-effect grassEffect;
 
 // textures
 map<string, texture> textures;
@@ -84,7 +56,6 @@ vec2 waterDelta;
 
 // floating amillary
 int amillaryRingsNumber = 6;
-mesh amillaryRing;
 vector<mat4> amillaryTransforms(amillaryRingsNumber);
 
 // trees
@@ -113,11 +84,31 @@ effect rainEffect;
 effect compute_eff;
 GLuint vao;
 
-// grassData
-vector<mat4> grassTransforms(MAX_PARTICLES);
 
 bool load_content() {
-	renderer::setClearColour(0, 0, 0);
+
+	// loads the effects
+	loadEffects(effects);
+
+	// load the meshes
+	loadMeshes(meshes);
+	loadSpecialRenderMeshes(specialRenderMeshes);
+
+	// init lights
+	initPointLights(points);
+	initSpotLights(spots);
+	light.set_ambient_intensity(vec4(0, 0, 0, 0));
+	light.set_direction(normalize(meshes["boat"].get_transform().position));
+	light.set_light_colour(vec4(0, 0, 0, 0));
+
+	// Set camera properties
+	setupFreeCam(freeCam);
+	setupTargetCameras(targetCameras, meshes);
+	setupChaseCamera(chaseCamera, meshes["amillary"]);
+	activeCam = &freeCam;
+
+
+
 	// initis motion blur required params
 	// initFrames
 	initScreenQuad(screen_quad);
@@ -126,66 +117,14 @@ bool load_content() {
 	frames[1] = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 	// Create a temp framebuffer
 	temp_frame = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
-	motionBlurEffect = createMotionBlurEffect();
-	basicTextureEffect = createBasicTexturingEffect();
 
-	textures["clearWater"] = texture("textures/clearWater.jpg", false, true);
-
-
-	//init rain data
-	default_random_engine rand(duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
-	// Initilise particles
-	for (unsigned int i = 0; i < MAX_PARTICLES; ++i) {
-		int randX = (rand() % 800);
-		int randY = rand() % 800;
-		int randZ = (rand() % 800);
-		switch(i%4)
-		{
-		case 0:
-			randX *= -1;
-			break;
-		case 1:
-			randZ *= -1;
-			break;
-		case 2:
-			randX *= -1;
-			randZ *= -1;
-		}
-		positions[i] = vec4(randX, randY, randZ, 0.0f);
-		int randSpeedY = -(rand() % 100 + 100);
-		velocitys[i] = vec4(0, randSpeedY, 0, 0.0f);
-	}
-
-	// a useless vao, but we need it bound or we get errors.
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	// *********************************
-	//Generate Position Data buffer
-	glGenBuffers(1, &G_Position_buffer);
-	// Bind as GL_SHADER_STORAGE_BUFFER
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, G_Position_buffer);
-	// Send Data to GPU, use GL_DYNAMIC_DRAW
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vec4) * MAX_PARTICLES, positions, GL_DYNAMIC_DRAW);
-
-	// Generate Velocity Data buffer
-	glGenBuffers(1, &G_Velocity_buffer);
-	// Bind as GL_SHADER_STORAGE_BUFFER
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, G_Velocity_buffer);
-	// Send Data to GPU, use GL_DYNAMIC_DRAW
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vec4) * MAX_PARTICLES, velocitys, GL_DYNAMIC_DRAW);
-	// *********************************    
-	//Unbind
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
+	initRainPositions(MAX_PARTICLES, positions, velocitys);
+	initRainBuffers(vao, G_Position_buffer, G_Velocity_buffer, MAX_PARTICLES, positions, velocitys);
 	compute_eff = createRainComputeShader();
 	rainEffect = createBasicRainEffect();
 
-
-	
-
 	// amillary ring
-	amillaryRing = mesh(geometry("models/amillaryRing.obj"));
-	amillaryRing.get_material().set_shininess(25.0f);
+	specialRenderMeshes["amillaryRing"].get_material().set_shininess(25.0f);
 
 	// tree positions
 	generateTreesTransforms(treeTransforms);
@@ -195,155 +134,39 @@ bool load_content() {
 	shadowEff = createMultiLightEffect();
 	shouldRenderShadows = false;
 
-	// Generates the terrain and loads its textures
+	// Generates the terrain
 	auto width = 30;
 	auto height = 30;
 	auto heightScale = 3.0f;
 	const texture height_map("textures/islandHMap.jpg");
 	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale);
-	//meshes["terrain"].get_material().set_specular(vec4(0.57, 0.3, 0.1, 0.3));
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["terrain"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
-	textures["terrainZero"] = texture("textures/sand.jpg", false, true);
-	textures["terrainSand"] = texture("textures/sgrass.jpg", false, true);
-	textures["terrainGrass"] = texture("textures/turf-grass.jpg", false, true);
-	textures["terrainRock"] = texture("textures/overgrownRocks.jpg", false, true);
-	normal_maps["terrainZero"] = texture("textures/terrainSand0.jpg", false, true);
-	normal_maps["terrainSand"] = texture("textures/terrainSandOne.jpg", false, true);
-	normal_maps["terrainGrass"] = texture("textures/terrainGrassNorm.png", false, true);
-	normal_maps["terrainRock"] = texture("textures/terrainRockNorm.jpg", false, true);
-
-	effects["terrain"] = createTerrainEffect();
-
-	// Generates water and loads its textures
-	meshes["waterBase"] = createWaterMesh();
-	textures["waterBase"] = texture("textures/water2k.jpg", false, true);
-	normal_maps["waterBase"] = texture("textures/waterNormal.jpg", false, true);
-	effects["waterBase"] = createMovingWaterEffect();
+	
 
 	// Generates the night skyboxss
-	skybox = createSkybox();
 	array<string, 6> filenames = { "textures/skybox/starfield_ft.tga", "textures/skybox/starfield_bk.tga", "textures/skybox/starfield_up.tga",
 		"textures/skybox/starfield_dn.tga", "textures/skybox/starfield_rt.tga", "textures/skybox/starfield_lf.tga" };
 	cube_map = cubemap(filenames);
-	skyboxEffect = createSkyboxEffect();
-	skybox.get_transform().scale = vec3(1000, 1000, 1000);
-
-	// Generates lantern
-	meshes["lantern"] = createLampMesh();
-	textures["lantern"] = texture("textures/lampDiff.png", false, true);
-	effects["lantern"] = createMultiLightEffect();
-
-	// Generates the moon and loads its textures
-	meshes["moon"] = createMoonMesh();
-	textures["moon"] = texture("textures/moonTex.jpg", false, true);
-	effects["moon"] = createMultiLightEffect();
-
-	// Generates the moon and loads its textures
-	meshes["buddha"] = createStatueMesh();
-	textures["buddha"] = texture("textures/buddha.jpg", false, true);
-	normal_maps["buddha"] = texture("textures/buddhaN.jpg", false, true);
-	effects["buddha"] = createMultiLightEffect();
-
-	// Generates the boat and loads its textures
-	meshes["boat"] = createBoatMesh();
-	textures["boat"] = texture("textures/boatTex.png", false, true);
-	normal_maps["boat"] = texture("textures/woodNorm.jpg", false, true);
-	effects["boat"] = createNormalMapEffect();
-
-	// Generates the grave and loads its textures
-	meshes["grave"] = createGraveMesh();
-	textures["grave"] = texture("textures/grave.png", false, true);
-	effects["grave"] = createMultiLightEffect();
-
-	// Generates the statue and loads its textures
-	meshes["violet"] = createVioletTreeMesh();
-
-	textures["violet"] = texture("textures/violet.png", false, true);
-	alpha_maps["violet"] = texture("textures/violet_a.jpg", false, true);
-	effects["violet"] = createMultiLightRemoveAlphaEffect();
-	normal_maps["violet"] = texture("textures/violetNorm.png", false, true);
-
-	trees = createTreeMesh();
-	textures["tree"] = texture("textures/treeDiff.tga", false, true);
-	alpha_maps["tree"] = texture("textures/treeAlpha.tga", false, true);
-	normal_maps["tree"] = texture("textures/treeNorm.tga", false, true);
-	treeEffect = createMultiInstanceRemoveAlphaEffect();
-
-	// Generates the katana and loads its textures
-	meshes["katana"] = createKatanaMesh();
-	textures["katana"] = texture("textures/katDiffuse.tga", false, true);
-	effects["katana"] = createMultiLightEffect();
-
-	// Generates the basic rock and loads its textures
-	meshes["amillary"] = createAmillaryMesh();
-	textures["amillary"] = texture("textures/metal.jpg", false, true);
-	normal_maps["amillary"] = texture("textures/metalNorm.jpg", false, true);
-	effects["amillary"] = createNormalMapEffect();
-
-	// Generates the mossyRock and loads its textures
-	meshes["mossyRock"] = createMossyRockMesh();
-	textures["mossyRock"] = texture("textures/mossyRock.jpg", false, true);
-	normal_maps["mossyRock"] = texture("textures/mossyRockNorm.jpg", false, true);
-	effects["mossyRock"] = createNormalMapEffect();
-
-	// Generates the mossyRock and loads its textures
-	meshes["guardian"] = createStoneGuardianMesh();
-	textures["guardian"] = texture("textures/guardian.psd", false, true);
-	normal_maps["guardian"] = texture("textures/guardianNorm.tga", false, true);
-	effects["guardian"] = createNormalMapEffect();
+	specialRenderMeshes["skybox"].get_transform().scale = vec3(1000, 1000, 1000);
 
 	// Setup of the floating spheres dataon = 0.0f;
-	crystal = mesh(geometry("models/meteor.obj"));
-
-	textures["crystal"] = texture("textures/crystalDiffuse.jpg", false, true);
-	normal_maps["crystal"] = texture("textures/meteorNorm.tga", false, true);
 	gemPosition = meshes["guardian"].get_transform().position + vec3(0, 35, 0);
 	createFloatersTransforms(generalDebrisOriginalTransforms, rotatingFloaterNumDebris, gemPosition, 0.15f);
 	for (auto i = 0; i < rotatingFloaterNumDebris; i++)
 	{
 		generalDebrisRotatingDebris[i] = generalDebrisOriginalTransforms[i];
 	}
-	multiIstanceNormalEffect = createMultiInstanceEffect();
 
-	// Generates the mossyRock and loads its textures
-	meshes["ruins"] = createRuinsMesh();
-	textures["ruins"] = texture("textures/grayStoneWall.jpg", false, true);
-	effects["ruins"] = createMultiLightEffect();
-
-	// Generates the mossyRock and loads its textures
-	meshes["stoneSword"] = createStoneSwordMesh();
-	textures["stoneSword"] = texture("textures/statueStone.jpg", false, true);
-	normal_maps["stoneSword"] = texture("textures/bladeNorms.tga", false, true);
-	effects["stoneSword"] = createNormalMapEffect();
-
-	meshes["deadTree"] = createDeadTreeMesh();
-	textures["deadTree"] = texture("textures/deadTree.jpg", false, true);
-	normal_maps["deadTree"] = texture("textures/deadTreeNorm.jpg", false, true);
-	effects["deadTree"] = createNormalMapEffect();
-
-	meshes["waterLantern"] = createLampMesh();
-	textures["waterLantern"] = texture("textures/lampDiff.png", false, true);
-	effects["waterLantern"] = createMultiLightEffect();
-
-	// Set sets up lightning values
-	light.set_ambient_intensity(vec4(0, 0, 0, 0));
-	light.set_direction(normalize(meshes["boat"].get_transform().position));
-	light.set_light_colour(vec4(0, 0, 0, 0));
-
-	initPointLights(points);
-	initSpotLights(spots);
-
-	// Set camera properties
-
-	setupFreeCam(freeCam);
-	setupTargetCameras(targetCameras, meshes);
-	setupChaseCamera(chaseCamera, meshes["amillary"]);
-	activeCam = &freeCam;
-
-
+	// Setup cursor
 	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	// loads the textures inside their dictinaries
+	loadTextures(textures);
+	loadNormalMaps(normal_maps);
+	loadAlphaMaps(alpha_maps);
+
 	return true;
 }
 
@@ -522,12 +345,14 @@ void renderSkybox()
 {
 	glDisable(GL_DEPTH_TEST);
 
+	effect skyboxEffect = effects["skybox"];
+
 	// Bind skybox effect
 	renderer::bind(skyboxEffect);
 
 	// Calculate MVP for the skybox
 
-	auto M = skybox.get_transform().get_transform_matrix();
+	auto M = specialRenderMeshes["skybox"].get_transform().get_transform_matrix();
 	auto V = activeCam->get_view();
 	auto P = activeCam->get_projection();
 	auto MVP = P * V * M;
@@ -540,7 +365,7 @@ void renderSkybox()
 	renderer::bind(cube_map, 0);
 
 	// Render skybox
-	renderer::render(skybox);
+	renderer::render(specialRenderMeshes["skybox"]);
 
 	// Enable depth test,depth mask,face culling
 	glEnable(GL_DEPTH_TEST);
@@ -647,7 +472,6 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 void renderMesh(mesh &m, string meshName, effect &eff, mat4 lightProjectionMatrix)
 {
 	renderer::bind(eff);
-
 	// Create MVP matrix
 	auto M = m.get_transform().get_transform_matrix();
 	auto V = activeCam->get_view();
@@ -765,7 +589,7 @@ void renderParticleRain()
 
 	// Set the colour uniform
 	renderer::bind(textures["clearWater"], 0);
-	glUniform1i(basicTextureEffect.get_uniform_location("tex"), 0);
+	glUniform1i(effects["basicTexturing"].get_uniform_location("tex"), 0);
 	glUniform3fv(rainEffect.get_uniform_location("cameraPosition"), 1, value_ptr(activeCam->get_position()));
 	// Set MVP matrix uniform
 	glUniformMatrix4fv(rainEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
@@ -786,7 +610,6 @@ void renderParticleRain()
 void renderSceneToTarget()
 {
 	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
-
 	if (shouldRenderShadows)
 	{
 		// Render Shadows
@@ -799,9 +622,30 @@ void renderSceneToTarget()
 
 	// Render skybox
 	renderSkybox();
-	renderInstanciatedMesh(crystal, rotatingFloaterNumDebris, generalDebrisRotatingDebris, multiIstanceNormalEffect, "crystal", lightProjectionMatrix);
-	renderInstanciatedMesh(amillaryRing, amillaryTransforms.size(), amillaryTransforms, multiIstanceNormalEffect, "amillary", lightProjectionMatrix);
-	renderInstanciatedMesh(trees, treesAmount, treeTransforms, treeEffect, "tree", lightProjectionMatrix);
+	renderInstanciatedMesh(
+		specialRenderMeshes["crystal"],
+		rotatingFloaterNumDebris,
+		generalDebrisRotatingDebris,
+		effects["multipleInstance"],
+		"crystal",
+		lightProjectionMatrix
+		);
+	renderInstanciatedMesh(
+		specialRenderMeshes["amillaryRing"],
+		amillaryTransforms.size(),
+		amillaryTransforms,
+		effects["multipleInstance"],
+		"amillary",
+		lightProjectionMatrix
+		);
+	renderInstanciatedMesh(
+		specialRenderMeshes["trees"],
+		treesAmount,
+		treeTransforms,
+		effects["trees"],
+		"tree",
+		lightProjectionMatrix
+		);
 
 	// Render meshes
 	for (auto &e : meshes) {
@@ -811,62 +655,47 @@ void renderSceneToTarget()
 		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
 	//Render rain
-	//renderParticleRain();
+	renderParticleRain();
 }
 
 void renderScreenBuffer()
 {
-		// Frame pass
-		renderer::set_render_target(frames[current_frame]);
-		// Clear frame
-		renderer::clear();
-		// Bind effect
-		renderer::bind(motionBlurEffect);
-		// MVP is now the identity matrix
-		auto MVP = mat4(1.0);
-		// Set MVP matrix uniform
-		glUniformMatrix4fv(motionBlurEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-		// Bind tempframe to TU 0.
-		renderer::bind(temp_frame.get_frame(), 0);
-		// Bind frames[(current_frame + 1) % 2] to TU 1.
-		renderer::bind(frames[(current_frame + 1) % 2].get_frame(), 1);
-		// Set tex uniforms
-		glUniform1i(motionBlurEffect.get_uniform_location("tex"), 0);
-		glUniform1i(motionBlurEffect.get_uniform_location("previous_frame"), 1);
-		// Set blend factor (0.9f)
-		glUniform1f(motionBlurEffect.get_uniform_location("blend_factor"), motionBlurCoeff);
-		// Render screen quad
-		renderer::render(screen_quad);
+	effect motionBlurEffect = effects["motionBlur"];
+	// Frame pass
+	renderer::set_render_target(frames[current_frame]);
+	// Clear frame
+	renderer::clear();
+	// Bind effect
+	renderer::bind(motionBlurEffect);
+	// MVP is now the identity matrix
+	auto MVP = mat4(1.0);
+	// Set MVP matrix uniform
+	glUniformMatrix4fv(motionBlurEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	// Bind tempframe to TU 0.
+	renderer::bind(temp_frame.get_frame(), 0);
+	// Bind frames[(current_frame + 1) % 2] to TU 1.
+	renderer::bind(frames[(current_frame + 1) % 2].get_frame(), 1);
+	// Set tex uniforms
+	glUniform1i(motionBlurEffect.get_uniform_location("tex"), 0);
+	glUniform1i(motionBlurEffect.get_uniform_location("previous_frame"), 1);
+	// Set blend factor (0.9f)
+	glUniform1f(motionBlurEffect.get_uniform_location("blend_factor"), motionBlurCoeff);
+	// Render screen quad
+	renderer::render(screen_quad);
 
-		// Screen pass
-		// Set render target back to the screen
-		renderer::set_render_target();
-		// Clear frame
-		renderer::bind(basicTextureEffect);
-		// Set MVP matrix uniform
-		glUniformMatrix4fv(basicTextureEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-		// Bind texture from frame buffer
-		renderer::bind(frames[current_frame].get_frame(), 3);
-		// Set the uniform
-		glUniform1i(basicTextureEffect.get_uniform_location("tex"), 3);
-		// Render the screen quad
-		renderer::render(screen_quad);	
-}
-
-void renderGrass(effect eff, geometry geom)
-{
-	// Simply render the points.  All the work done in the geometry shader
-	renderer::bind(eff);
-	auto V = activeCam->get_view();
-	auto P = activeCam->get_projection();
-	auto MVP = P * V;
-	glUniformMatrix4fv(eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(V));
-	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
-	glUniform1f(eff.get_uniform_location("point_size"), 2.0f);
-	renderer::bind(textures["grass"], 0);
-	glUniform1i(eff.get_uniform_location("tex"), 0);
-
-	renderer::render(geom);
+	// Screen pass
+	// Set render target back to the screen
+	renderer::set_render_target();
+	// Clear frame
+	renderer::bind(effects["basicTexturing"]);
+	// Set MVP matrix uniform
+	glUniformMatrix4fv(effects["basicTexturing"].get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	// Bind texture from frame buffer
+	renderer::bind(frames[current_frame].get_frame(), 3);
+	// Set the uniform
+	glUniform1i(effects["basicTexturing"].get_uniform_location("tex"), 3);
+	// Render the screen quad
+	renderer::render(screen_quad);
 }
 
 bool render() {
