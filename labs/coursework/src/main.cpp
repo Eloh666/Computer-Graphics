@@ -717,6 +717,7 @@ void renderPoints(effect eff, geometry geom, texture tex)
 	auto MVP = P * V;
 	glUniformMatrix4fv(eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(V));
 	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
+	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	glUniform1f(eff.get_uniform_location("point_size"), 2.0f);
 	renderer::bind(tex, 0);
 	glUniform1i(eff.get_uniform_location("tex"), 0);
