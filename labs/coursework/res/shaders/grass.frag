@@ -15,12 +15,8 @@ void main()
 	float fNewAlpha = vTexColor.a*fAlphaMultiplier;               
 	if(fNewAlpha < fAlphaTest)
 		discard;
-	
-	if(fNewAlpha > 1.0f)
-		fNewAlpha = 1.0f;	
 
+	vec4 vMixedColor = vTexColor*vec4(0, 0.43, 0, 1); 
 	
-	vec4 vMixedColor = vTexColor*vec4(0, 1, 0, 1); 
-	
-	outputColor = vec4(vMixedColor.zyx, fNewAlpha);
+	outputColor = vec4(vMixedColor.zyx, 1);
 }

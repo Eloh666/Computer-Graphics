@@ -7,7 +7,7 @@ using namespace chrono;
 using namespace graphics_framework;
 using namespace glm;
 
-inline mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale, geometry* grassGeom = nullptr) {
+inline mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale, mesh* grassMesh = nullptr) {
 
 	geometry geom;
 
@@ -150,7 +150,7 @@ inline mesh createTerrainMesh(const texture &height_map, unsigned int width, uns
 
 	geom.generate_tb(normals);
 	
-	if(grassGeom)
+	if(grassMesh)
 	{
 		//init rain data
 		default_random_engine rand(duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
@@ -160,7 +160,7 @@ inline mesh createTerrainMesh(const texture &height_map, unsigned int width, uns
 		int randX = (rand() % 2) + 1;
 		int currentIndex = 0;
 		float minHeight = height_scale * 0.285;
-		float maxHeight = height_scale * 0.65;
+		float maxHeight = height_scale * 0.675;
 		while(currentIndex < positions.size())
 		{
 			vec3 vertex = positions[currentIndex];
@@ -168,16 +168,18 @@ inline mesh createTerrainMesh(const texture &height_map, unsigned int width, uns
 			{
 				vec3 vertexToAdd = vertex * 50.0f;
 				filteredPositions.push_back(vertexToAdd);
-				for (int i = 0; i < randX; i++)
+				for (int i = 0; i < (rand() % 2) + 3; i++)
 				{
-					filteredPositions.push_back(vertexToAdd + vec3(i*randX, 0, i*randX));
+					filteredPositions.push_back(vertexToAdd + vec3(i*(rand() % 2) + 1, 0, i*(rand() % 2) + 1));
 				}
 			}
 			randX = (rand() % 2) + 1;
 			currentIndex += randX;
 		}
-		
-		grassGeom->add_buffer(filteredPositions, BUFFER_INDEXES::POSITION_BUFFER);
+		geometry grassGeom;
+		grassGeom.set_type(GL_POINTS);
+		grassGeom.add_buffer(filteredPositions, BUFFER_INDEXES::POSITION_BUFFER);
+		(*grassMesh) = mesh(grassGeom);
 	}
 
 	// Delete data

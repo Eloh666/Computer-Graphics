@@ -145,14 +145,10 @@ bool load_content()
 	auto height = 30;
 	auto heightScale = 3.0f;
 	const texture height_map("textures/islandHMap.jpg");
-	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale, &grassGeom);
+	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale, &meshes["grass"]);
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["terrain"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
-
-	//setup grass geometry
-	grassGeom.set_type(GL_POINTS);
-	textures["grass"] = texture("textures/grassPack.dds", false, true);
 
 
 	// Generates the night skyboxss
@@ -612,9 +608,9 @@ void renderParticleRain()
 	glUseProgram(0);
 }
 
-void renderGrass(effect eff, geometry geom, texture tex)
+void renderGrass()
 {
-	glDisable(GL_CULL_FACE);
+	effect eff = effects["grass"];
 	// Simply render the points.  All the work done in the geometry shader
 	renderer::bind(eff);
 	auto V = activeCam->get_view();
@@ -626,10 +622,10 @@ void renderGrass(effect eff, geometry geom, texture tex)
 	glUniform1f(eff.get_uniform_location("grassHeight"), 5.0f);
 	glUniform1f(eff.get_uniform_location("windStrength"), 4.0f);
 	glUniform3fv(eff.get_uniform_location("windDirectionIn"), 1, value_ptr(vec3(1.0f, 0.0f, 1.0f)));
-	renderer::bind(tex, 0);
+	renderer::bind(textures["grass"], 0);
 	glUniform1i(eff.get_uniform_location("tex"), 0);
-
-	renderer::render(geom);
+	glDisable(GL_CULL_FACE);
+	renderer::render(meshes["grass"]);
 	glEnable(GL_CULL_FACE);
 }
 
@@ -672,8 +668,7 @@ void renderSceneToTarget()
 		"tree",
 		lightProjectionMatrix
 		);
-	renderGrass(effects["grass"], grassGeom, textures["grass"]);
-
+	renderGrass();
 	// Render meshes
 	for (auto &e : meshes) {
 		auto m = e.second;
@@ -682,7 +677,7 @@ void renderSceneToTarget()
 		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
 	//Render rain
-	renderParticleRain();
+	//renderParticleRain();
 }
 
 void renderScreenBuffer()
