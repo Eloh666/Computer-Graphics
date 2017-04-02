@@ -1,35 +1,26 @@
 #version 440
 
-smooth in vec2 vTexCoord;
-//smooth in vec3 vNormal;
-
-smooth in vec3 vWorldPos;
-smooth in vec4 vEyeSpacePos;
+layout(location = 0) in vec2 tex_coord;
 
 out vec4 outputColor;
 
-uniform sampler2D gSampler;
-uniform vec4 vColor;
-
-uniform vec3 vEyePosition;
-
-//uniform Material matActive;
-
-uniform float fAlphaTest;
-uniform float fAlphaMultiplier;
+uniform sampler2D tex;
 
 void main()
 {
-	//vec4 vTexColor = texture2D(gSampler, vTexCoord);
-	//float fNewAlpha = vTexColor.a*fAlphaMultiplier;               
-	//if(fNewAlpha < fAlphaTest)
-	//	discard;
+	float fAlphaTest = 0.25f;
+	float fAlphaMultiplier = 1.5f;
+
+	vec4 vTexColor = texture2D(tex, tex_coord);
+	float fNewAlpha = vTexColor.a*fAlphaMultiplier;               
+	if(fNewAlpha < fAlphaTest)
+		discard;
 	
-	//if(fNewAlpha > 1.0f)
-	//	fNewAlpha = 1.0f;	
-		
-	//vec4 vMixedColor = vTexColor*vColor; 
+	if(fNewAlpha > 1.0f)
+		fNewAlpha = 1.0f;	
+
 	
-	//outputColor = vec4(vMixedColor.zyx, fNewAlpha);
-	outputColor = vec4(1, 0, 0, 1);
+	vec4 vMixedColor = vTexColor*vec4(0, 1, 0, 1); 
+	
+	outputColor = vec4(vMixedColor.zyx, fNewAlpha);
 }
