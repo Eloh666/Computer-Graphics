@@ -74,8 +74,8 @@ unsigned int current_frame = 0;
 geometry screen_quad;
 float motionBlurCoeff = 0;
 
-// rainData
-const unsigned long MAX_PARTICLES = 2 << 13;
+// Grass Data
+const unsigned long MAX_PARTICLES = 2 << 15;
 
 vec4 positions[MAX_PARTICLES];
 vec4 velocitys[MAX_PARTICLES];
@@ -84,15 +84,23 @@ effect rainEffect;
 effect compute_eff;
 GLuint vao;
 
+// Grass Data
+geometry grassGeom;
 
-bool load_content() {
 
+bool load_content()
+{
 	// loads the effects
 	loadEffects(effects);
 
 	// load the meshes
 	loadMeshes(meshes);
 	loadSpecialRenderMeshes(specialRenderMeshes);
+
+	// loads the textures inside their dictinaries
+	loadTextures(textures);
+	loadNormalMaps(normal_maps);
+	loadAlphaMaps(alpha_maps);
 
 	// init lights
 	initPointLights(points);
@@ -106,8 +114,6 @@ bool load_content() {
 	setupTargetCameras(targetCameras, meshes);
 	setupChaseCamera(chaseCamera, meshes["amillary"]);
 	activeCam = &freeCam;
-
-
 
 	// initis motion blur required params
 	// initFrames
@@ -139,11 +145,13 @@ bool load_content() {
 	auto height = 30;
 	auto heightScale = 3.0f;
 	const texture height_map("textures/islandHMap.jpg");
-	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale);
+	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale, &meshes["grass"]);
+	meshes["grass"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
+	meshes["grass"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
-	
+
 
 	// Generates the night skyboxss
 	array<string, 6> filenames = { "textures/skybox/starfield_ft.tga", "textures/skybox/starfield_bk.tga", "textures/skybox/starfield_up.tga",
@@ -161,11 +169,6 @@ bool load_content() {
 
 	// Setup cursor
 	glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-	// loads the textures inside their dictinaries
-	loadTextures(textures);
-	loadNormalMaps(normal_maps);
-	loadAlphaMaps(alpha_maps);
 
 	return true;
 }
@@ -607,6 +610,26 @@ void renderParticleRain()
 	glUseProgram(0);
 }
 
+void renderGrass()
+{
+	effect eff = effects["grass"];
+	// Simply render the points.  All the work done in the geometry shader
+	renderer::bind(eff);
+	auto V = activeCam->get_view();
+	auto P = activeCam->get_projection();
+	auto MVP = P * V;
+	glUniformMatrix4fv(eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(V));
+	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
+	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	glUniform1f(eff.get_uniform_location("grassHeight"), 6.5f);
+	glUniform1f(eff.get_uniform_location("windStrength"), 4.0f);
+	glUniform3fv(eff.get_uniform_location("windDirectionIn"), 1, value_ptr(vec3(1.0f, 0.0f, 1.0f)));
+	setupGeneralBindings(meshes["grass"], "grass", eff);
+	glDisable(GL_CULL_FACE);
+	renderer::render(meshes["grass"]);
+	glEnable(GL_CULL_FACE);
+}
+
 void renderSceneToTarget()
 {
 	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
@@ -646,7 +669,7 @@ void renderSceneToTarget()
 		"tree",
 		lightProjectionMatrix
 		);
-
+	renderGrass();
 	// Render meshes
 	for (auto &e : meshes) {
 		auto m = e.second;

@@ -30,6 +30,7 @@ inline void loadTextures(map<string, texture> &textures)
 	textures["amillary"] = texture("textures/metal.jpg", false, true);
 	textures["clearWater"] = texture("textures/clearWater.jpg", false, true);
 	textures["waterBase"] = texture("textures/water2k.jpg", false, true);
+	textures["grass"] = texture("textures/grassPack.dds", false, true);
 	
 
 }

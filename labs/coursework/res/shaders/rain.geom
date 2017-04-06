@@ -8,7 +8,7 @@ layout (location = 1) out float distanceFromCamera;
 
 
 layout(points) in;
-layout(line_strip, max_vertices = 100) out;
+layout(line_strip, max_vertices = 50) out;
 
 void main()
 {
@@ -24,16 +24,6 @@ void main()
 		EmitVertex();
 
 		gl_Position = gl_in[0].gl_Position + vec4(0.0, -delta, 0.0, 0.0);
-		texCoordOut = texCoords[0];
-		distanceFromCamera = dropDistance;
-		EmitVertex();
-
-		gl_Position = gl_in[0].gl_Position + vec4(0.1, delta, 0.0, 0.0);
-		texCoordOut = texCoords[0];
-		distanceFromCamera = dropDistance;
-		EmitVertex();
-
-		gl_Position = gl_in[0].gl_Position + vec4(0.1, -delta, 0.0, 0.0);
 		texCoordOut = texCoords[0];
 		distanceFromCamera = dropDistance;
 		EmitVertex();

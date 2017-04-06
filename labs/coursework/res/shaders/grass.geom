@@ -2,16 +2,24 @@
 
 uniform mat4 MVP;
 uniform mat4 MV;
+uniform mat3 N;
+uniform float grassHeight;
+uniform float windStrength;
+uniform vec3 windDirectionIn;
 
 layout(points) in;
 layout(triangle_strip) out;
-layout(max_vertices = 12) out;
+layout(max_vertices = 16) out;
 
-smooth out vec2 textCoordOut;
-smooth out vec3 worldPos;
-smooth out vec4 eyeSpacePos;
+layout (location = 0) out vec3 position;
+layout (location = 1) out vec3 transformed_normal;
+layout(location = 2) out vec2 tex_coord;
 
-mat4 rotationMatrix(vec3 axis, float angle)
+
+
+// I take no credit for the following 3 functions and part of the main logic
+// a tutorial was used to identify a way to generate these quads the way they have been
+mat4 getRotationMatrix(vec3 axis, float angle)
 {
     axis = normalize(axis);
     float s = sin(angle);
@@ -44,30 +52,35 @@ int randomInt(int min, int max)
 	return int(float(min)+fRandomFloat*float(max-min));
 }
 
+vec3 getFaceNormal(vec3 a, vec3 b, vec3 c){
+	// Calculate two vectors in the plane of the input triangle
+	vec3 ab = a - b;
+	vec3 ac = a - c;
+	vec3 normal = normalize(cross(ab, ac));
+	return normal;
+}
+
 void main()
 {
 	
-	vec3 vGrassFieldPos = gl_in[0].gl_Position.xyz;
+	vec3 basePoint = gl_in[0].gl_Position.xyz;
 
 	float PIover180 = 3.1415/180.0;
-	vec3 vBaseDir[3] = vec3[](
+	vec3 baseRotationVectors[4] = vec3[](
 		vec3(1.0, 0.0, 0.0),
 		vec3(float(cos(45.0*PIover180)), 0.0f, float(sin(45.0*PIover180))),
-		vec3(float(cos(-45.0*PIover180)), 0.0f, float(sin(-45.0*PIover180)))
+		vec3(float(cos(-45.0*PIover180)), 0.0f, float(sin(-45.0*PIover180))),
+		vec3(float(cos(90.0*PIover180)), 0.0f, float(sin(90.0*PIover180)))
 	);
 	
-	float fGrassPatchSize = 5.0;
-	float fWindStrength = 4.0;
-	
-	vec3 vWindDirection = vec3(1.0, 0.0, 1.0);
-	vWindDirection = normalize(vWindDirection);
+	vec3 windDirection = normalize(windDirectionIn);
 
-	for(int i = 0; i < 3; i++)
+	for(int i = 0; i < 4; i++)
 	{
 
-		vec3 vBaseDirRotated = (rotationMatrix(vec3(0, 1, 0), sin(i*0.7)*0.1)*vec4(vBaseDir[i], 1.0)).xyz;
+		vec3 baseRotationVectorsRotated = (getRotationMatrix(vec3(0, 1, 0), sin(i*0.7)*0.1)*vec4(baseRotationVectors[i], 1.0)).xyz;
 
-		vLocalSeed = vGrassFieldPos*float(i);
+		vLocalSeed = basePoint*float(i);
 		int iGrassPatch = randomInt(0, 3);
 		
 		float fGrassPatchHeight = 3.5+randZeroOne()*2.0;
@@ -75,47 +88,56 @@ void main()
 		float fTCStartX = float(iGrassPatch)*0.25f;
 		float fTCEndX = fTCStartX+0.25f;
 
-		float fWindPower = 0.5f+sin(vGrassFieldPos.x/30+vGrassFieldPos.z/30+(1.2f+fWindStrength/20.0f));
+		float fWindPower = 0.5f+sin(basePoint.x/30+basePoint.z/30+(1.2f+windStrength/20.0f));
 		if(fWindPower < 0.0f)
 			fWindPower = fWindPower*0.2f;
 		else fWindPower = fWindPower*0.3f;
 		
-		fWindPower *= fWindStrength;
+		fWindPower *= windStrength;
 		
+		
+		// Grass patch top left vertex
+		vec3 topLeftVert = basePoint - baseRotationVectorsRotated*grassHeight*0.5f + windDirection*fWindPower;
+		topLeftVert.y += fGrassPatchHeight; 
+		// Grass patch bottom left vertex
+		vec3 bottomLeftVert = basePoint - baseRotationVectors[i]*grassHeight*0.5f;  
+		// Grass patch top right vertex
+		vec3 topRightVert = basePoint + baseRotationVectorsRotated*grassHeight*0.5f + windDirection*fWindPower;
+		topRightVert.y += fGrassPatchHeight;  
+		// Grass patch bottom right vertex
+		vec3 bottomRightVert = basePoint + baseRotationVectors[i]*grassHeight*0.5f; 
 
-		vec3 vTL = vGrassFieldPos - vBaseDirRotated*fGrassPatchSize*0.5f + vWindDirection*fWindPower;
-		vTL.y += fGrassPatchHeight; 
-		gl_Position = MVP*vec4(vTL, 1.0);
-		textCoordOut = vec2(fTCStartX, 1.0);
-		worldPos = vTL;
-		eyeSpacePos = MV*vec4(vTL, 1.0);
+		vec3 triangleNormal = N * getFaceNormal(topLeftVert, bottomLeftVert, topRightVert);
+
+
+		// Grass patch top left vertex
+		gl_Position = MVP*vec4(topLeftVert, 1.0);
+		tex_coord = vec2(fTCStartX, 1.0);
+		transformed_normal = triangleNormal;
+		position = topLeftVert;
 		EmitVertex();
 		
 		// Grass patch bottom left vertex
-		vec3 vBL = vGrassFieldPos - vBaseDir[i]*fGrassPatchSize*0.5f;  
-		gl_Position = MVP*vec4(vBL, 1.0);
-		textCoordOut = vec2(fTCStartX, 0.0);
-		worldPos = vBL;
-		eyeSpacePos = MV*vec4(vBL, 1.0);
+		gl_Position = MVP*vec4(bottomLeftVert, 1.0);
+		tex_coord = vec2(fTCStartX, 0.0);
+		transformed_normal = triangleNormal;
+		position = bottomLeftVert;
 		EmitVertex();
 		                               
 		// Grass patch top right vertex
-		vec3 vTR = vGrassFieldPos + vBaseDirRotated*fGrassPatchSize*0.5f + vWindDirection*fWindPower;
-		vTR.y += fGrassPatchHeight;  
-		gl_Position = MVP*vec4(vTR, 1.0);
-		textCoordOut = vec2(fTCEndX, 1.0);
-		worldPos = vTR;
-		eyeSpacePos = MV*vec4(vTR, 1.0);
+		gl_Position = MVP*vec4(topRightVert, 1.0);
+		tex_coord = vec2(fTCEndX, 1.0);
+		transformed_normal = triangleNormal;
+		position = topRightVert;
 		EmitVertex();
 		
 		// Grass patch bottom right vertex
-		vec3 vBR = vGrassFieldPos + vBaseDir[i]*fGrassPatchSize*0.5f;  
-		gl_Position = MVP*vec4(vBR, 1.0);
-		textCoordOut = vec2(fTCEndX, 0.0);
-		worldPos = vBR;
-		eyeSpacePos = MV*vec4(vBR, 1.0);
+		gl_Position = MVP*vec4(bottomRightVert, 1.0);
+		tex_coord = vec2(fTCEndX, 0.0);
+		transformed_normal = triangleNormal;
+		position = bottomRightVert;
 		EmitVertex();
-		
+
 		EndPrimitive();
 	}
 }
