@@ -32,7 +32,7 @@ inline void initRainPositions(unsigned long MAX_PARTICLES, vec4 positions[], vec
 		}
 		positions[i] = vec4(randX, randY, randZ, 0.0f);
 		int randSpeedY = -(rand() % 100 + 100);
-		velociticies[i] = vec4(10, randSpeedY, 10, 0.0f);
+		velociticies[i] = vec4(0, randSpeedY, 0, 0.0f);
 	}
 }
 

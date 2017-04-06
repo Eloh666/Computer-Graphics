@@ -146,7 +146,7 @@ bool load_content()
 	auto heightScale = 3.0f;
 	const texture height_map("textures/islandHMap.jpg");
 	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale, &meshes["grass"]);
-	meshes["grass"].get_material().set_specular(vec4(0, 0, 0, 0));
+	meshes["grass"].get_material().set_specular(vec4(0, 0.5, 0, 1));
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["grass"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_material().set_shininess(25.0f);
