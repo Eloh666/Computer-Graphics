@@ -90,6 +90,9 @@ geometry grassGeom;
 
 bool load_content()
 {
+	// loads the effects
+	loadEffects(effects);
+
 	// load the meshes
 	loadMeshes(meshes);
 	loadSpecialRenderMeshes(specialRenderMeshes);
@@ -98,9 +101,6 @@ bool load_content()
 	loadTextures(textures);
 	loadNormalMaps(normal_maps);
 	loadAlphaMaps(alpha_maps);
-
-	// loads the effects
-	loadEffects(effects);
 
 	// init lights
 	initPointLights(points);
@@ -146,7 +146,9 @@ bool load_content()
 	auto heightScale = 3.0f;
 	const texture height_map("textures/islandHMap.jpg");
 	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale, &meshes["grass"]);
+	meshes["grass"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
+	meshes["grass"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
 
@@ -619,11 +621,10 @@ void renderGrass()
 	glUniformMatrix4fv(eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(V));
 	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
 	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-	glUniform1f(eff.get_uniform_location("grassHeight"), 5.0f);
+	glUniform1f(eff.get_uniform_location("grassHeight"), 6.5f);
 	glUniform1f(eff.get_uniform_location("windStrength"), 4.0f);
 	glUniform3fv(eff.get_uniform_location("windDirectionIn"), 1, value_ptr(vec3(1.0f, 0.0f, 1.0f)));
-	renderer::bind(textures["grass"], 0);
-	glUniform1i(eff.get_uniform_location("tex"), 0);
+	setupGeneralBindings(meshes["grass"], "grass", eff);
 	glDisable(GL_CULL_FACE);
 	renderer::render(meshes["grass"]);
 	glEnable(GL_CULL_FACE);
@@ -677,7 +678,7 @@ void renderSceneToTarget()
 		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
 	//Render rain
-	//renderParticleRain();
+	renderParticleRain();
 }
 
 void renderScreenBuffer()
