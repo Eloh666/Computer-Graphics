@@ -75,7 +75,7 @@ geometry screen_quad;
 float motionBlurCoeff = 0;
 
 // Grass Data
-const unsigned long MAX_PARTICLES = 2 << 15;
+const unsigned long MAX_PARTICLES = 2 << 16;
 
 vec4 positions[MAX_PARTICLES];
 vec4 velocitys[MAX_PARTICLES];
@@ -593,7 +593,7 @@ void renderParticleRain()
 	// Set the colour uniform
 	renderer::bind(textures["clearWater"], 0);
 	glUniform1i(effects["basicTexturing"].get_uniform_location("tex"), 0);
-	glUniform3fv(rainEffect.get_uniform_location("cameraPosition"), 1, value_ptr(activeCam->get_position()));
+	glUniform3fv(rainEffect.get_uniform_location("eyePos"), 1, value_ptr(activeCam->get_position()));
 	// Set MVP matrix uniform
 	glUniformMatrix4fv(rainEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 
