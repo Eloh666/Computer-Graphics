@@ -75,7 +75,7 @@ geometry screen_quad;
 float motionBlurCoeff = 0;
 
 // Grass Data
-const unsigned long MAX_PARTICLES = 2 << 13;
+const unsigned long MAX_PARTICLES = 2 << 15;
 
 vec4 positions[MAX_PARTICLES];
 vec4 velocitys[MAX_PARTICLES];
@@ -90,17 +90,17 @@ geometry grassGeom;
 
 bool load_content()
 {
-	//// load the meshes
-	//loadMeshes(meshes);
-	//loadSpecialRenderMeshes(specialRenderMeshes);
-
-	// loads the textures inside their dictinaries
-	//loadTextures(textures);
-	//loadNormalMaps(normal_maps);
-	//loadAlphaMaps(alpha_maps);
-
 	// loads the effects
 	loadEffects(effects);
+
+	// load the meshes
+	loadMeshes(meshes);
+	loadSpecialRenderMeshes(specialRenderMeshes);
+
+	// loads the textures inside their dictinaries
+	loadTextures(textures);
+	loadNormalMaps(normal_maps);
+	loadAlphaMaps(alpha_maps);
 
 	// init lights
 	initPointLights(points);
@@ -114,15 +114,6 @@ bool load_content()
 	setupTargetCameras(targetCameras, meshes);
 	setupChaseCamera(chaseCamera, meshes["amillary"]);
 	activeCam = &freeCam;
-
-	//setup grass geometry
-	auto grassPositions = vector<vec3>{
-		vec3(405.0f, 80.0f, -285.0f)
-	};
-
-	grassGeom.add_buffer(grassPositions, BUFFER_INDEXES::POSITION_BUFFER);
-	grassGeom.set_type(GL_POINTS);
-	textures["grass"] = texture("textures/grass.png", false, true);
 
 	// initis motion blur required params
 	// initFrames
@@ -154,8 +145,10 @@ bool load_content()
 	auto height = 30;
 	auto heightScale = 3.0f;
 	const texture height_map("textures/islandHMap.jpg");
-	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale);
+	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale, &meshes["grass"]);
+	meshes["grass"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
+	meshes["grass"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
 
@@ -617,6 +610,26 @@ void renderParticleRain()
 	glUseProgram(0);
 }
 
+void renderGrass()
+{
+	effect eff = effects["grass"];
+	// Simply render the points.  All the work done in the geometry shader
+	renderer::bind(eff);
+	auto V = activeCam->get_view();
+	auto P = activeCam->get_projection();
+	auto MVP = P * V;
+	glUniformMatrix4fv(eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(V));
+	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
+	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	glUniform1f(eff.get_uniform_location("grassHeight"), 6.5f);
+	glUniform1f(eff.get_uniform_location("windStrength"), 4.0f);
+	glUniform3fv(eff.get_uniform_location("windDirectionIn"), 1, value_ptr(vec3(1.0f, 0.0f, 1.0f)));
+	setupGeneralBindings(meshes["grass"], "grass", eff);
+	glDisable(GL_CULL_FACE);
+	renderer::render(meshes["grass"]);
+	glEnable(GL_CULL_FACE);
+}
+
 void renderSceneToTarget()
 {
 	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
@@ -656,7 +669,7 @@ void renderSceneToTarget()
 		"tree",
 		lightProjectionMatrix
 		);
-
+	renderGrass();
 	// Render meshes
 	for (auto &e : meshes) {
 		auto m = e.second;
@@ -708,27 +721,10 @@ void renderScreenBuffer()
 	renderer::render(screen_quad);
 }
 
-void renderPoints(effect eff, geometry geom, texture tex)
-{
-	// Simply render the points.  All the work done in the geometry shader
-	renderer::bind(eff);
-	auto V = activeCam->get_view();
-	auto P = activeCam->get_projection();
-	auto MVP = P * V;
-	glUniformMatrix4fv(eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(V));
-	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
-	glUniform1f(eff.get_uniform_location("point_size"), 2.0f);
-	renderer::bind(tex, 0);
-	glUniform1i(eff.get_uniform_location("tex"), 0);
-
-	renderer::render(geom);
-}
-
 bool render() {
 
-	//renderSceneToTarget();
-	//renderScreenBuffer();
-	renderPoints(effects["grass"], grassGeom, textures["grass"]);
+	renderSceneToTarget();
+	renderScreenBuffer();
 	return true;
 }
 

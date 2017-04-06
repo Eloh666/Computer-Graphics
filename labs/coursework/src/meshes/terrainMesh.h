@@ -3,10 +3,11 @@
 #include <graphics_framework.h>
 
 using namespace std;
+using namespace chrono;
 using namespace graphics_framework;
 using namespace glm;
 
-inline mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale, geometry* grassLocations = nullptr) {
+inline mesh createTerrainMesh(const texture &height_map, unsigned int width, unsigned int depth, float height_scale, mesh* grassMesh = nullptr) {
 
 	geometry geom;
 
@@ -21,44 +22,46 @@ inline mesh createTerrainMesh(const texture &height_map, unsigned int width, uns
 	// Contains our index data
 	vector<unsigned int> indices;
 
+	auto heightMapWidth = height_map.get_width();
+	auto heightMapHeight = height_map.get_height();
+
 	// Extract the texture data from the image
 	glBindTexture(GL_TEXTURE_2D, height_map.get_id());
-	auto data = new vec4[height_map.get_width() * height_map.get_height()];
+	auto data = new vec4[heightMapWidth * heightMapHeight];
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, static_cast<void *>(data));
 
 	// Determine ratio of height map to geometry
-	float width_point = static_cast<float>(width) / static_cast<float>(height_map.get_width());
-	float depth_point = static_cast<float>(depth) / static_cast<float>(height_map.get_height());
+	float width_point = static_cast<float>(width) / static_cast<float>(heightMapWidth);
+	float depth_point = static_cast<float>(depth) / static_cast<float>(heightMapHeight);
 
 	// Point to work on
 	vec3 point;
-
 	// Part 1 - Iterate through each point, calculate vertex and add to vector
-	for (int x = 0; x < height_map.get_width(); ++x) {
+	for (int x = 0; x < heightMapWidth; ++x) {
 		// Calculate x position of point
 		point.x = -(width / 2.0f) + (width_point * static_cast<float>(x));
 
-		for (int z = 0; z < height_map.get_height(); ++z) {
+		for (int z = 0; z < heightMapHeight; ++z) {
 			// *********************************
 			// Calculate z position of point
 			point.z = -(depth / 2.0f) + (depth_point * static_cast<float>(z));
 			// *********************************
 			// Y position based on red component of height map data
-			point.y = data[(z * height_map.get_width()) + x].y * height_scale;
+			point.y = data[(z * heightMapWidth) + x].y * height_scale;
 			// Add point to position data
 			positions.push_back(point);
 		}
 	}
 
 	// Part 1 - Add index data
-	for (unsigned int x = 0; x < height_map.get_width() - 1; ++x) {
-		for (unsigned int y = 0; y < height_map.get_height() - 1; ++y) {
+	for (unsigned int x = 0; x < heightMapWidth - 1; ++x) {
+		for (unsigned int y = 0; y < heightMapHeight - 1; ++y) {
 			// Get four corners of patch
-			unsigned int top_left = (y * height_map.get_width()) + x;
-			unsigned int top_right = (y * height_map.get_width()) + x + 1;
+			unsigned int top_left = (y * heightMapWidth) + x;
+			unsigned int top_right = (y * heightMapWidth) + x + 1;
 			// *********************************
-			unsigned int bottom_left = ((y + 1) * height_map.get_width()) + x;
-			unsigned int bottom_right = ((y + 1) * height_map.get_height()) + x + 1;
+			unsigned int bottom_left = ((y + 1) * heightMapWidth) + x;
+			unsigned int bottom_right = ((y + 1) * heightMapHeight) + x + 1;
 
 			// *********************************
 			// Push back indices for triangle 1 (tl,br,bl)
@@ -110,21 +113,21 @@ inline mesh createTerrainMesh(const texture &height_map, unsigned int width, uns
 	}
 
 	// Part 3 - Add texture coordinates for geometry
-	for (unsigned int x = 0; x < height_map.get_width(); ++x) {
-		for (unsigned int z = 0; z < height_map.get_height(); ++z) {
+	for (unsigned int x = 0; x < heightMapWidth; ++x) {
+		for (unsigned int z = 0; z < heightMapHeight; ++z) {
 			tex_coords.push_back(vec2(width_point * x, depth_point * z));
 		}
 	}
 
 	// Part 4 - Calculate texture weights for each vertex
-	for (unsigned int x = 0; x < height_map.get_width(); ++x) {
-		for (unsigned int z = 0; z < height_map.get_height(); ++z) {
+	for (unsigned int x = 0; x < heightMapWidth; ++x) {
+		for (unsigned int z = 0; z < heightMapHeight; ++z) {
 			// Calculate tex weight
 			vec4 tex_weight(
-				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.1f) / 0.25f, 0.0f, 1.0f),
-				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.1f) / 0.25f, 0.0f, 1.0f),
-				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.5f) / 0.25f, 0.0f, 1.0f),
-				clamp(1.0f - abs(data[(height_map.get_width() * z) + x].y - 0.9f) / 0.25f, 0.0f, 1.0f)
+				clamp(1.0f - abs(data[(heightMapWidth * z) + x].y - 0.1f) / 0.25f, 0.0f, 1.0f),
+				clamp(1.0f - abs(data[(heightMapWidth * z) + x].y - 0.1f) / 0.25f, 0.0f, 1.0f),
+				clamp(1.0f - abs(data[(heightMapWidth * z) + x].y - 0.5f) / 0.25f, 0.0f, 1.0f),
+				clamp(1.0f - abs(data[(heightMapWidth * z) + x].y - 0.9f) / 0.25f, 0.0f, 1.0f)
 );
 
 			// *********************************
@@ -146,6 +149,38 @@ inline mesh createTerrainMesh(const texture &height_map, unsigned int width, uns
 	geom.add_index_buffer(indices);
 
 	geom.generate_tb(normals);
+	
+	if(grassMesh)
+	{
+		//init rain data
+		default_random_engine rand(duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+		
+		vector<vec3> filteredPositions = vector<vec3>();
+
+		int randX = (rand() % 2) + 1;
+		int currentIndex = 0;
+		float minHeight = height_scale * 0.285;
+		float maxHeight = height_scale * 0.675;
+		while(currentIndex < positions.size())
+		{
+			vec3 vertex = positions[currentIndex];
+			if(vertex.y >= minHeight && vertex.y <= maxHeight)
+			{
+				vec3 vertexToAdd = vertex * 50.0f;
+				filteredPositions.push_back(vertexToAdd);
+				for (int i = 0; i < (rand() % 2) + 3; i++)
+				{
+					filteredPositions.push_back(vertexToAdd + vec3(i*(rand() % 2) + 1, 0, i*(rand() % 2) + 1));
+				}
+			}
+			randX = (rand() % 2) + 1;
+			currentIndex += randX;
+		}
+		geometry grassGeom;
+		grassGeom.set_type(GL_POINTS);
+		grassGeom.add_buffer(filteredPositions, BUFFER_INDEXES::POSITION_BUFFER);
+		(*grassMesh) = mesh(grassGeom);
+	}
 
 	// Delete data
 	delete[] data;
