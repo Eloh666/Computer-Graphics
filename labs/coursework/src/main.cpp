@@ -73,6 +73,12 @@ frame_buffer temp_frame;
 unsigned int current_frame = 0;
 geometry screen_quad;
 float motionBlurCoeff = 0;
+bool motionBlurEnabled = false;
+bool DOFEnabled = false;
+bool sepiaFilterEnabled = false;
+
+vec3 selectedTargetPos;
+bool targetOrChaseCamera;
 
 // Grass Data
 const unsigned long MAX_PARTICLES = 2 << 16;
@@ -197,15 +203,21 @@ void handleUserInput(float delta_time)
 		std::cout << freeCam.get_position().x << endl;
 		std::cout << freeCam.get_position().y << endl;
 		std::cout << freeCam.get_position().z << endl;
+		targetOrChaseCamera = false;
+		DOFEnabled = false;
+
 	}
 	// activates chase cam
 	if (glfwGetKey(renderer::get_window(), 'C')) {
 		activeCam = &chaseCamera;
+		targetOrChaseCamera = true;
+		selectedTargetPos = meshes["amillary"].get_transform().position;
 	}
 
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_O)) {
 		shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
 		shouldRenderShadows = false;
+		DOFEnabled = false;
 	}
 
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_P)) {
@@ -225,21 +237,33 @@ void handleUserInput(float delta_time)
 	// activates static target cameras
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F1)) {
 		activeCam = &targetCameras[0];
+		targetOrChaseCamera = false;
+		DOFEnabled = false;
 	}
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F2)) {
 		activeCam = &targetCameras[1];
+		targetOrChaseCamera = false;
+		DOFEnabled = false;
 	}
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F3)) {
 		activeCam = &targetCameras[2];
+		targetOrChaseCamera = false;
+		DOFEnabled = false;;
 	}
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F4)) {
 		activeCam = &targetCameras[3];
+		targetOrChaseCamera = false;
+		DOFEnabled = false;
 	}
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F5)) {
 		activeCam = &targetCameras[4];
+		targetOrChaseCamera = false;
+		DOFEnabled = false;
 	}
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F6)) {
 		activeCam = &targetCameras[5];
+		targetOrChaseCamera = false;
+		DOFEnabled = false;
 	}
 
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_F7)) {
@@ -274,15 +298,44 @@ void handleUserInput(float delta_time)
 	// none
 	if (glfwGetKey(renderer::get_window(), 'B')) {
 		motionBlurCoeff = 0;
+		motionBlurEnabled = false;
 	}
 	// medium
 	if (glfwGetKey(renderer::get_window(), 'N')) {
 		motionBlurCoeff = 0.65;
+		motionBlurEnabled = true;
+		DOFEnabled = false;
 	}
 	// on drugs
 	if (glfwGetKey(renderer::get_window(), 'M')) {
 		motionBlurCoeff = 0.9;
+		motionBlurEnabled = true;
+		DOFEnabled = false;
 	}
+
+	// handles DOF status for amillary
+	if (glfwGetKey(renderer::get_window(), 'Z')) {
+		if(targetOrChaseCamera)
+		{
+			motionBlurCoeff = 0;
+			DOFEnabled = true;
+			motionBlurEnabled = false;
+		}
+	}
+	if (glfwGetKey(renderer::get_window(), 'X')) {
+		motionBlurCoeff = 0.65;
+		DOFEnabled = false;
+	}
+
+	// handles sepia like effect
+	if (glfwGetKey(renderer::get_window(), 'G')) {
+		sepiaFilterEnabled = true;
+	}
+	if (glfwGetKey(renderer::get_window(), 'H')) {
+		motionBlurCoeff = 0.65;
+		sepiaFilterEnabled = false;
+	}
+
 
 }
 
@@ -630,7 +683,7 @@ void renderGrass()
 	glEnable(GL_CULL_FACE);
 }
 
-void renderSceneToTarget()
+void renderSceneFirstPass()
 {
 	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
 	if (shouldRenderShadows)
@@ -638,8 +691,16 @@ void renderSceneToTarget()
 		// Render Shadows
 		renderShadows(lightProjectionMatrix);
 	}
-	// select render target
-	renderer::set_render_target(temp_frame);
+	if(motionBlurEnabled || DOFEnabled || sepiaFilterEnabled)
+	{
+		// select render target
+		renderer::set_render_target(temp_frame);
+	}
+	else
+	{
+		// render to screenspace
+		renderer::set_render_target();
+	}
 	// clear renderer
 	renderer::clear();
 
@@ -681,7 +742,7 @@ void renderSceneToTarget()
 	renderParticleRain();
 }
 
-void renderScreenBuffer()
+void renderSceneWithMotionBlur()
 {
 	effect motionBlurEffect = effects["motionBlur"];
 	// Frame pass
@@ -708,7 +769,16 @@ void renderScreenBuffer()
 
 	// Screen pass
 	// Set render target back to the screen
-	renderer::set_render_target();
+	if (sepiaFilterEnabled)
+	{
+		// select render target
+		renderer::set_render_target(temp_frame);
+	}
+	else
+	{
+		// render to screenspace
+		renderer::set_render_target();
+	}
 	// Clear frame
 	renderer::bind(effects["basicTexturing"]);
 	// Set MVP matrix uniform
@@ -721,10 +791,116 @@ void renderScreenBuffer()
 	renderer::render(screen_quad);
 }
 
+void renderSceneWithDepthOfField()
+{
+	// !!!!!!!!!!!!!!! SECOND PASS !!!!!!!!!!!!!!!!
+
+	frame_buffer last_pass = temp_frame;
+
+	// *********************************
+	// Perform blur twice
+	for (int i = 0; i < 2; i++)
+	{
+		// Set render target to temp_frames[i]
+		renderer::set_render_target(frames[i]);
+		// Clear frame
+		renderer::clear();
+		// Bind motion blur effect
+		renderer::bind(effects["blur"]);
+		// MVP is now the identity matrix
+		auto MVP = mat4(1.0);
+		// Set MVP matrix uniform
+		glUniformMatrix4fv(effects["blur"].get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+		// Bind texture
+		renderer::bind(last_pass.get_frame(), 0);
+		// Set tex uniform
+		glUniform1i(effects["blur"].get_uniform_location("tex"), 0);
+		// Set inverse width
+		glUniform1f(effects["blur"].get_uniform_location("inverse_width"), 1.0f / renderer::get_screen_width());
+		// Set inverse height Uniform
+		glUniform1f(effects["blur"].get_uniform_location("inverse_height"), 1.0f / renderer::get_screen_height());
+		// Render screen quad
+		renderer::render(screen_quad);
+		// Set last pass to this pass
+		last_pass = frames[i];
+
+	}
+	// !!!!!!!!!!!!!!! SCREEN PASS !!!!!!!!!!!!!!!!
+
+	// Set render target back to the screen
+	if (sepiaFilterEnabled)
+	{
+		// select render target
+		renderer::set_render_target(temp_frame);
+	}
+	else
+	{
+		// render to screenspace
+		renderer::set_render_target();
+	}
+	//Bid Dof effect
+	renderer::bind(effects["dof"]);
+	// Set MVP matrix uniform, identity
+	auto MVP = mat4(1);
+	glUniformMatrix4fv(effects["dof"].get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	// Bind texture from last pass, 0
+	renderer::bind(last_pass.get_frame(), 0);
+	// Set the uniform, 0
+	glUniform1i(effects["dof"].get_uniform_location("tex"), 0);
+	// Sharp texture is taken from first pass
+	// bind first pass, 1
+	renderer::bind(temp_frame.get_frame(), 1);
+	//set sharp tex uniform, 1
+	glUniform1i(effects["dof"].get_uniform_location("sharp"), 1);
+	// Depth also taken from first pass
+	// bind first pass **depth** to  TU 2
+	renderer::bind(temp_frame.get_depth(), 2);
+	//set depth tex uniform, 2
+	glUniform1i(effects["dof"].get_uniform_location("depth"), 2);
+	// Set range and focus values
+	// - range distance to chaser (get from camera)
+	// - focus 0.3
+	glUniform1f(effects["dof"].get_uniform_location("range"), distance(activeCam->get_position(), selectedTargetPos));
+	glUniform1f(effects["dof"].get_uniform_location("focus"), 0.3f);
+	// Render the screen quad
+	renderer::render(screen_quad);
+	// *********************************
+}
+
+void renderSceneWithSepia()
+{
+	// Set render target back to the screen
+	renderer::set_render_target();
+	// Bind Tex effect
+	renderer::bind(effects["sepia"]);
+	// MVP is now the identity matrix
+	auto MVP = mat4(1);
+	// Set MVP matrix uniform
+	glUniformMatrix4fv(effects["sepia"].get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	// Bind texture from frame buffer
+	renderer::bind(temp_frame.get_frame(), 0);
+	// Set the tex uniform
+	glUniform1i(effects["sepia"].get_uniform_location("tex"), 0);
+	// Render the screen quad
+	renderer::render(screen_quad);
+}
+
 bool render() {
 
-	renderSceneToTarget();
-	renderScreenBuffer();
+	renderSceneFirstPass();
+	if(motionBlurEnabled)
+	{
+		renderSceneWithMotionBlur();
+	}
+	else if(DOFEnabled)
+	{
+		renderSceneWithDepthOfField();
+	}
+
+	if(sepiaFilterEnabled)
+	{
+		renderSceneWithSepia();
+	}
 	return true;
 }
 

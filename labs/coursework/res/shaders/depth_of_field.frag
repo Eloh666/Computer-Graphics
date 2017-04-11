@@ -28,7 +28,7 @@ void main() {
   vec4 depthTex = texture(depth, tex_coord);
   float dist = depthTex.z;
   // Mix samples together based on distance
-  colour = mix(sharpTex, blurTex, dist);
+  colour = mix(sharpTex, blurTex, clamp(range * abs(focus - dist), 0, 1));
   // Ensure alpha is 1.0
   colour.a = 1.0;
   // *********************************

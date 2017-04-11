@@ -18,7 +18,12 @@ using namespace glm;
 
 inline void loadEffects(map<string, effect> &effects)
 {
+	//post procesing
 	effects["motionBlur"] = createMotionBlurEffect();
+	effects["blur"] = createBlurTexturingEffect();
+	effects["dof"] = createDOFTexturingEffect();
+	effects["sepia"] = createGreyscaleEffect();
+
 	effects["basicTexturing"] = createBasicTexturingEffect();
 	effects["terrain"] = createTerrainEffect();
 	effects["waterBase"] = createMovingWaterEffect();

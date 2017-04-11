@@ -37,3 +37,33 @@ inline effect createBasicTexturingEffect()
 	return eff;
 
 }
+
+inline effect createBlurTexturingEffect()
+{
+	effect eff;
+	eff.add_shader("shaders/simpTex.vert", GL_VERTEX_SHADER);
+	eff.add_shader("shaders/blur.frag", GL_FRAGMENT_SHADER);
+	eff.build();
+	return eff;
+
+}
+
+inline effect createDOFTexturingEffect()
+{
+	effect eff;
+	eff.add_shader("shaders/simpTex.vert", GL_VERTEX_SHADER);
+	eff.add_shader("shaders/depth_of_field.frag", GL_FRAGMENT_SHADER);
+	eff.build();
+	return eff;
+
+}
+
+inline effect createGreyscaleEffect()
+{
+	effect eff;
+	eff.add_shader("shaders/simpTex.vert", GL_VERTEX_SHADER);
+	eff.add_shader("shaders/greyscale.frag", GL_FRAGMENT_SHADER);
+	eff.build();
+	return eff;
+
+}
