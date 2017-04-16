@@ -81,7 +81,7 @@ vec3 selectedTargetPos;
 bool targetOrChaseCamera;
 
 // Rain Data
-const unsigned long MAX_PARTICLES = 2 << 14;
+const unsigned long MAX_PARTICLES = 2 << 18;
 
 vec4 positions[MAX_PARTICLES];
 vec4 velocitys[MAX_PARTICLES];
@@ -89,7 +89,7 @@ GLuint G_Position_buffer, G_Velocity_buffer;
 effect rainEffect;
 effect compute_eff;
 GLuint vao;
-bool shouldRenderRain = true;
+bool shouldRenderRain = false;
 
 // Grass Data
 geometry grassGeom;
