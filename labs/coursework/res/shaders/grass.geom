@@ -24,12 +24,12 @@ mat4 getRotationMatrix(vec3 axis, float angle)
     axis = normalize(axis);
     float s = sin(angle);
     float c = cos(angle);
-    float oc = 1.0 - c;
+    float u = 1.0 - c;
     
-    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-                0.0,                                0.0,                                0.0,                                1.0);
+    return mat4(u * axis.x * axis.x + c,           u * axis.x * axis.y - axis.z * s,  u * axis.z * axis.x + axis.y * s,  0.0,
+                u * axis.x * axis.y + axis.z * s,  u * axis.y * axis.y + c,           u * axis.y * axis.z - axis.x * s,  0.0,
+                u * axis.z * axis.x - axis.y * s,  u * axis.y * axis.z + axis.x * s,  u * axis.z * axis.z + c,           0.0,
+                0.0,                                0.0,                                0.0,                             1.0);
 }
 
 vec3 vLocalSeed;
@@ -88,12 +88,12 @@ void main()
 		float fTCStartX = float(iGrassPatch)*0.25f;
 		float fTCEndX = fTCStartX+0.25f;
 
-		float fWindPower = 0.5f+sin(basePoint.x/30+basePoint.z/30+(1.2f+windStrength/40.0f));
+		float fWindPower = 0.5f+sin(basePoint.x/30+basePoint.z/30+(1.2f+abs(windStrength)/30.0f));
 		if(fWindPower < 0.0f)
 			fWindPower = fWindPower*0.2f;
 		else fWindPower = fWindPower*0.3f;
 		
-		fWindPower *= windStrength / 2.0;
+		fWindPower *= abs(windStrength) / 1.5;
 		
 		
 		// Grass patch top left vertex
