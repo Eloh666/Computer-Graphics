@@ -28,7 +28,7 @@ void main(void) {
   } else if (new_pos.y < 0) {
     new_pos.y = max_dims.y;
   } else if (new_pos.z < -max_dims.z / 2) {
-    new_pos.z = max_dims.z / 2;
+    new_pos.z = max_dims.x / 2;
   }
 
   // Store the new position and velocity back into the buffers

@@ -88,12 +88,12 @@ void main()
 		float fTCStartX = float(iGrassPatch)*0.25f;
 		float fTCEndX = fTCStartX+0.25f;
 
-		float fWindPower = 0.5f+sin(basePoint.x/30+basePoint.z/30+(1.2f+windStrength/20.0f));
+		float fWindPower = 0.5f+sin(basePoint.x/30+basePoint.z/30+(1.2f+windStrength/40.0f));
 		if(fWindPower < 0.0f)
 			fWindPower = fWindPower*0.2f;
 		else fWindPower = fWindPower*0.3f;
 		
-		fWindPower *= windStrength;
+		fWindPower *= windStrength / 2.0;
 		
 		
 		// Grass patch top left vertex

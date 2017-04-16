@@ -80,7 +80,7 @@ bool sepiaFilterEnabled = false;
 vec3 selectedTargetPos;
 bool targetOrChaseCamera;
 
-// Grass Data
+// Rain Data
 const unsigned long MAX_PARTICLES = 2 << 14;
 
 vec4 positions[MAX_PARTICLES];
@@ -89,9 +89,12 @@ GLuint G_Position_buffer, G_Velocity_buffer;
 effect rainEffect;
 effect compute_eff;
 GLuint vao;
+bool shouldRenderRain = true;
 
 // Grass Data
 geometry grassGeom;
+float windStrength = 0.0f;
+float windStrengthMult = 1.0f;
 
 
 bool load_content()
@@ -336,6 +339,14 @@ void handleUserInput(float delta_time)
 		sepiaFilterEnabled = false;
 	}
 
+	// handles sepia like effect
+	if (glfwGetKey(renderer::get_window(), 'R')) {
+		shouldRenderRain = true;
+	}
+	if (glfwGetKey(renderer::get_window(), 'T')) {
+		shouldRenderRain = false;
+	}
+
 
 }
 
@@ -392,6 +403,18 @@ bool update(float delta_time) {
 	{
 		spots[3].set_range(0);
 	}
+
+	// manages the rushing of the wind
+	if(windStrength >= 30.0)
+	{
+		windStrengthMult = -1.0f;
+	}
+	else if(windStrength <= -30.0)
+	{
+		windStrengthMult = 1.0;
+	}
+	windStrength += (windStrengthMult * 0.125);
+
 
 
 	return true;
@@ -677,8 +700,8 @@ void renderGrass()
 	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
 	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	glUniform1f(eff.get_uniform_location("grassHeight"), 6.5f);
-	glUniform1f(eff.get_uniform_location("windStrength"), 4.0f);
-	glUniform3fv(eff.get_uniform_location("windDirectionIn"), 1, value_ptr(vec3(1.0f, 0.0f, 1.0f)));
+	glUniform1f(eff.get_uniform_location("windStrength"), windStrength);
+	glUniform3fv(eff.get_uniform_location("windDirectionIn"), 1, value_ptr(vec3(-1.0f, 0.0f, 0.0f)));
 	setupGeneralBindings(meshes["grass"], "grass", eff);
 	glDisable(GL_CULL_FACE);
 	renderer::render(meshes["grass"]);
@@ -740,8 +763,11 @@ void renderSceneFirstPass()
 		effect eff = effects[meshName];
 		renderMesh(m, meshName, eff, lightProjectionMatrix);
 	}
-	//Render rain
-	renderParticleRain();
+	if(shouldRenderRain)
+	{
+		//Render rain
+		renderParticleRain();
+	}
 }
 
 void renderSceneWithMotionBlur()

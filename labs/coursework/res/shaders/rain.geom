@@ -1,5 +1,6 @@
 #version 440
 uniform mat4 MVP;
+
 layout (location = 0) out vec2 tex_coord;
 layout(points) in;
 layout(triangle_strip, max_vertices = 4) out;
@@ -13,12 +14,12 @@ void renderVertex(vec4 position, vec3 vertex){
 
 void main()
 {
-	
+
 	vec3 vertices[4] = vec3[](
 		vec3(-6.1, -10.0, 0.0),
 		vec3(0.1, 10.0, 0.0),
 		vec3(0, 10.0, 0.0),
-		vec3(-6.0, -10.0, 0.1)
+		vec3(-6, -10.0, 0.1)
 	);
 
 	int indices[4] = int[](
