@@ -81,7 +81,7 @@ vec3 selectedTargetPos;
 bool targetOrChaseCamera;
 
 // Grass Data
-const unsigned long MAX_PARTICLES = 2 << 16;
+const unsigned long MAX_PARTICLES = 2 << 14;
 
 vec4 positions[MAX_PARTICLES];
 vec4 velocitys[MAX_PARTICLES];
@@ -624,6 +624,7 @@ void renderShadows(mat4 lightProjectionMatrix)
 
 void renderParticleRain()
 {
+	glDisable(GL_CULL_FACE);
 	// Bind Compute Shader
 	renderer::bind(compute_eff);
 	// Bind data as SSBO
@@ -661,6 +662,7 @@ void renderParticleRain()
 	glDisableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glUseProgram(0);
+	glEnable(GL_CULL_FACE);
 }
 
 void renderGrass()
