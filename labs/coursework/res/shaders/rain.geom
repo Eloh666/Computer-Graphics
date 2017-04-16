@@ -8,13 +8,13 @@ void main()
 {
     vec4 position = gl_in[0].gl_Position;
     // Grass patch bottom left vertex
-	  vec2 va = position.xy + vec2(3.00, -10);
+	  vec2 va = position.xy + vec2(5.00, -10);
     gl_Position = position + vec4(va, position.zw);
     tex_coord = vec2(0.0, 0.0);
     EmitVertex();
 
     // Vertex 2 is bottom right
-	  vec2 br = position.xy + vec2(3.05, -10);
+	  vec2 br = position.xy + vec2(5.05, -10);
     gl_Position = position + vec4(br, position.zw);
     tex_coord = vec2(1.0, 0.0);
     EmitVertex();

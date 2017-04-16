@@ -23,10 +23,10 @@ void main(void) {
   // *********************************
 
   // Keep all particles on screen
-  if (abs(new_pos.x) > max_dims.x) {
-    new_pos.x = 0.0;
+  if (new_pos.x < -max_dims.x / 2) {
+    new_pos.x = max_dims.x / 2;
   } else if (new_pos.y < 0) {
-    new_pos.y = 800;
+    new_pos.y = max_dims.y;
   } else if (abs(new_pos.z) > max_dims.z) {
     new_pos.z = 0.0;
   }
