@@ -49,3 +49,27 @@ inline void loadSpecialRenderMeshes(map<string, mesh> &meshes)
 	meshes["crystal"] = mesh(geometry("models/meteor.obj"));
 	meshes["amillaryRing"] = mesh(geometry("models/amillaryRing.obj"));
 }
+
+vec3 scaleVecByVec(vec3 aaBB, vec3 scaleSize)
+{
+	vec3 result = aaBB;
+
+	result.x *= scaleSize.x;
+	result.y *= scaleSize.y;
+	result.z *= scaleSize.z;
+
+	return result;
+}
+
+inline void calculateMeshesRadiuses(map<string, mesh> &meshes, map<string, float> &radiuses)
+{
+	for (auto &e : meshes)
+	{
+		auto m = e.second;
+		geometry geom = m.get_geometry();
+		vec3 scl = m.get_transform().scale;
+		vec3 maxPoint = scaleVecByVec(m.get_geometry().get_maximal_point(), scl);
+		vec3 minPoint = scaleVecByVec(m.get_geometry().get_minimal_point(), scl);
+		radiuses[e.first] = length((maxPoint - minPoint) * 0.5f);
+	}
+}

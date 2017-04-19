@@ -68,6 +68,7 @@ inline effect createBasicRainEffect()
 	effect eff;
 	eff.add_shader("shaders/rain.vert", GL_VERTEX_SHADER);
 	eff.add_shader("shaders/rain.geom", GL_GEOMETRY_SHADER);
+	eff.add_shader("shaders/frustumCulling.geom", GL_GEOMETRY_SHADER);
 	eff.add_shader("shaders/rain.frag", GL_FRAGMENT_SHADER);
 	// Build effect
 	eff.build();

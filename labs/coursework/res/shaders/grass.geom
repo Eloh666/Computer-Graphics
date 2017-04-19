@@ -2,6 +2,7 @@
 
 uniform mat4 MVP;
 uniform mat4 MV;
+uniform mat4 VP;
 uniform mat3 N;
 uniform float grassHeight;
 uniform float windStrength;
@@ -15,10 +16,10 @@ layout (location = 0) out vec3 position;
 layout (location = 1) out vec3 transformed_normal;
 layout(location = 2) out vec2 tex_coord;
 
+bool shouldRenderMesh(mat4 VP, vec4 center);
 
-
-// I take no credit for the following 3 functions and part of the main logic
-// a tutorial was used to identify a way to generate these quads the way they have been
+// Disclamer: the 3 following functions are the result of following a tutorial, they have been modified,
+// but for this reason I only deserve part of the credit
 mat4 getRotationMatrix(vec3 axis, float angle)
 {
     axis = normalize(axis);
@@ -62,82 +63,85 @@ vec3 getFaceNormal(vec3 a, vec3 b, vec3 c){
 
 void main()
 {
+
+	bool shouldRender = shouldRenderMesh(VP, gl_in[0].gl_Position);
+	if(shouldRender){
+		vec3 basePoint = gl_in[0].gl_Position.xyz;
+
+		float PIover180 = 3.1415/180.0;
+		vec3 baseRotationVectors[4] = vec3[](
+			vec3(1.0, 0.0, 0.0),
+			vec3(float(cos(45.0*PIover180)), 0.0f, float(sin(45.0*PIover180))),
+			vec3(float(cos(-45.0*PIover180)), 0.0f, float(sin(-45.0*PIover180))),
+			vec3(float(cos(90.0*PIover180)), 0.0f, float(sin(90.0*PIover180)))
+		);
 	
-	vec3 basePoint = gl_in[0].gl_Position.xyz;
+		vec3 windDirection = normalize(windDirectionIn);
 
-	float PIover180 = 3.1415/180.0;
-	vec3 baseRotationVectors[4] = vec3[](
-		vec3(1.0, 0.0, 0.0),
-		vec3(float(cos(45.0*PIover180)), 0.0f, float(sin(45.0*PIover180))),
-		vec3(float(cos(-45.0*PIover180)), 0.0f, float(sin(-45.0*PIover180))),
-		vec3(float(cos(90.0*PIover180)), 0.0f, float(sin(90.0*PIover180)))
-	);
+		for(int i = 0; i < 4; i++)
+		{
+
+			vec3 baseRotationVectorsRotated = (getRotationMatrix(vec3(0, 1, 0), sin(i*0.7)*0.1)*vec4(baseRotationVectors[i], 1.0)).xyz;
+
+			vLocalSeed = basePoint*float(i);
+			int iGrassPatch = randomInt(0, 3);
+		
+			float fGrassPatchHeight = 3.5+randZeroOne()*2.0;
 	
-	vec3 windDirection = normalize(windDirectionIn);
+			float fTCStartX = float(iGrassPatch)*0.25f;
+			float fTCEndX = fTCStartX+0.25f;
 
-	for(int i = 0; i < 4; i++)
-	{
-
-		vec3 baseRotationVectorsRotated = (getRotationMatrix(vec3(0, 1, 0), sin(i*0.7)*0.1)*vec4(baseRotationVectors[i], 1.0)).xyz;
-
-		vLocalSeed = basePoint*float(i);
-		int iGrassPatch = randomInt(0, 3);
+			float fWindPower = 0.5f+sin(basePoint.x/30+basePoint.z/30+(1.2f+abs(windStrength)/40.0f));
+			if(fWindPower < 0.0f)
+				fWindPower = fWindPower*0.2f;
+			else fWindPower = fWindPower*0.3f;
 		
-		float fGrassPatchHeight = 3.5+randZeroOne()*2.0;
-	
-		float fTCStartX = float(iGrassPatch)*0.25f;
-		float fTCEndX = fTCStartX+0.25f;
-
-		float fWindPower = 0.5f+sin(basePoint.x/30+basePoint.z/30+(1.2f+abs(windStrength)/30.0f));
-		if(fWindPower < 0.0f)
-			fWindPower = fWindPower*0.2f;
-		else fWindPower = fWindPower*0.3f;
-		
-		fWindPower *= abs(windStrength) / 1.5;
+			fWindPower *= abs(windStrength) / 2;
 		
 		
-		// Grass patch top left vertex
-		vec3 topLeftVert = basePoint - baseRotationVectorsRotated*grassHeight*0.5f + windDirection*fWindPower;
-		topLeftVert.y += fGrassPatchHeight; 
-		// Grass patch bottom left vertex
-		vec3 bottomLeftVert = basePoint - baseRotationVectors[i]*grassHeight*0.5f;  
-		// Grass patch top right vertex
-		vec3 topRightVert = basePoint + baseRotationVectorsRotated*grassHeight*0.5f + windDirection*fWindPower;
-		topRightVert.y += fGrassPatchHeight;  
-		// Grass patch bottom right vertex
-		vec3 bottomRightVert = basePoint + baseRotationVectors[i]*grassHeight*0.5f; 
+			// Grass patch top left vertex
+			vec3 topLeftVert = basePoint - baseRotationVectorsRotated*grassHeight*0.5f + windDirection*fWindPower;
+			topLeftVert.y += fGrassPatchHeight; 
+			// Grass patch bottom left vertex
+			vec3 bottomLeftVert = basePoint - baseRotationVectors[i]*grassHeight*0.5f;  
+			// Grass patch top right vertex
+			vec3 topRightVert = basePoint + baseRotationVectorsRotated*grassHeight*0.5f + windDirection*fWindPower;
+			topRightVert.y += fGrassPatchHeight;  
+			// Grass patch bottom right vertex
+			vec3 bottomRightVert = basePoint + baseRotationVectors[i]*grassHeight*0.5f; 
 
-		vec3 triangleNormal = N * getFaceNormal(topLeftVert, bottomLeftVert, topRightVert);
+			vec3 triangleNormal = N * getFaceNormal(topLeftVert, bottomLeftVert, topRightVert);
 
 
-		// Grass patch top left vertex
-		gl_Position = MVP*vec4(topLeftVert, 1.0);
-		tex_coord = vec2(fTCStartX, 1.0);
-		transformed_normal = triangleNormal;
-		position = topLeftVert;
-		EmitVertex();
+			// Grass patch top left vertex
+			gl_Position = MVP*vec4(topLeftVert, 1.0);
+			tex_coord = vec2(fTCStartX, 1.0);
+			transformed_normal = triangleNormal;
+			position = topLeftVert;
+			EmitVertex();
 		
-		// Grass patch bottom left vertex
-		gl_Position = MVP*vec4(bottomLeftVert, 1.0);
-		tex_coord = vec2(fTCStartX, 0.0);
-		transformed_normal = triangleNormal;
-		position = bottomLeftVert;
-		EmitVertex();
+			// Grass patch bottom left vertex
+			gl_Position = MVP*vec4(bottomLeftVert, 1.0);
+			tex_coord = vec2(fTCStartX, 0.0);
+			transformed_normal = triangleNormal;
+			position = bottomLeftVert;
+			EmitVertex();
 		                               
-		// Grass patch top right vertex
-		gl_Position = MVP*vec4(topRightVert, 1.0);
-		tex_coord = vec2(fTCEndX, 1.0);
-		transformed_normal = triangleNormal;
-		position = topRightVert;
-		EmitVertex();
+			// Grass patch top right vertex
+			gl_Position = MVP*vec4(topRightVert, 1.0);
+			tex_coord = vec2(fTCEndX, 1.0);
+			transformed_normal = triangleNormal;
+			position = topRightVert;
+			EmitVertex();
 		
-		// Grass patch bottom right vertex
-		gl_Position = MVP*vec4(bottomRightVert, 1.0);
-		tex_coord = vec2(fTCEndX, 0.0);
-		transformed_normal = triangleNormal;
-		position = bottomRightVert;
-		EmitVertex();
+			// Grass patch bottom right vertex
+			gl_Position = MVP*vec4(bottomRightVert, 1.0);
+			tex_coord = vec2(fTCEndX, 0.0);
+			transformed_normal = triangleNormal;
+			position = bottomRightVert;
+			EmitVertex();
 
-		EndPrimitive();
+			EndPrimitive();
+		}
 	}
 }

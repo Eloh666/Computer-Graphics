@@ -9,6 +9,7 @@
 #include "textures/loadTextures.h"
 #include "effects/loadEffects.h"
 #include "meshes/loadMeshes.h"
+#include "optimiziation/frustrumCulling.h"
 
 using namespace std;
 using namespace chrono;
@@ -31,6 +32,7 @@ chase_camera chaseCamera;
 // meshes
 map<string, mesh> meshes;
 map<string, mesh> specialRenderMeshes;
+map<string, float> radiuses;
 
 //effects
 map<string, effect> effects;
@@ -105,6 +107,7 @@ bool load_content()
 	// load the meshes
 	loadMeshes(meshes);
 	loadSpecialRenderMeshes(specialRenderMeshes);
+	calculateMeshesRadiuses(meshes, radiuses);
 
 	// loads the textures inside their dictinaries
 	loadTextures(textures);
@@ -155,12 +158,11 @@ bool load_content()
 	auto heightScale = 3.0f;
 	const texture height_map("textures/islandHMap.jpg");
 	meshes["terrain"] = createTerrainMesh(height_map, width, height, heightScale, &meshes["grass"]);
-	meshes["grass"].get_material().set_specular(vec4(0, 0.5, 0, 1));
+	meshes["grass"].get_material().set_specular(vec4(0, 0.0, 0, 1));
 	meshes["terrain"].get_material().set_specular(vec4(0, 0, 0, 0));
 	meshes["grass"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_material().set_shininess(25.0f);
 	meshes["terrain"].get_transform().scale = vec3(50, 50, 50);
-
 
 	// Generates the night skyboxss
 	array<string, 6> filenames = { "textures/skybox/starfield_ft.tga", "textures/skybox/starfield_bk.tga", "textures/skybox/starfield_up.tga",
@@ -548,32 +550,39 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 	glUniform1i(eff.get_uniform_location("shadow_map"), 15);
 }
 
-void renderMesh(mesh &m, string meshName, effect &eff, mat4 lightProjectionMatrix)
+bool renderMesh(mesh &m, string meshName, effect &eff, mat4 lightProjectionMatrix)
 {
-	renderer::bind(eff);
-	// Create MVP matrix
 	auto M = m.get_transform().get_transform_matrix();
 	auto V = activeCam->get_view();
 	auto P = activeCam->get_projection();
 	auto MVP = P * V * M;
-	// Set MVP matrix uniform
-	glUniformMatrix4fv(eff.get_uniform_location("MVP"),
-		1,
-		GL_FALSE,
-		value_ptr(MVP));
-	glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+	//if(shouldRenderMesh(P*V, radiuses[meshName], m.get_transform().position, meshName))
+	if(shouldRenderMesh(P*V, m.get_transform().position, radiuses[meshName]))
+	{
+		renderer::bind(eff);
+		// Create MVP matrix
 
-	auto lightMVP = lightProjectionMatrix * shadow.get_view() * M;
-	// Set light transform
-	glUniformMatrix4fv(eff.get_uniform_location("lightMVP"),
-		1,
-		GL_FALSE,
-		value_ptr(lightMVP));
+		// Set MVP matrix uniform
+		glUniformMatrix4fv(eff.get_uniform_location("MVP"),
+			1,
+			GL_FALSE,
+			value_ptr(MVP));
+		glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 
-	setupGeneralBindings(m, meshName, eff);
+		auto lightMVP = lightProjectionMatrix * shadow.get_view() * M;
+		// Set light transform
+		glUniformMatrix4fv(eff.get_uniform_location("lightMVP"),
+			1,
+			GL_FALSE,
+			value_ptr(lightMVP));
 
-	// Render mesh
-	renderer::render(m);
+		setupGeneralBindings(m, meshName, eff);
+
+		// Render mesh
+		renderer::render(m);
+		return true;
+	}
+	return false;
 }
 
 void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name, mat4 lightProjectionMatrix)
@@ -673,6 +682,7 @@ void renderParticleRain()
 	glUniform3fv(rainEffect.get_uniform_location("eyePos"), 1, value_ptr(activeCam->get_position()));
 	// Set MVP matrix uniform
 	glUniformMatrix4fv(rainEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	glUniformMatrix4fv(rainEffect.get_uniform_location("VP"), 1, GL_FALSE, value_ptr(P*V));
 
 	// Bind position buffer as GL_ARRAY_BUFFER
 	glBindBuffer(GL_ARRAY_BUFFER, G_Position_buffer);
@@ -699,6 +709,7 @@ void renderGrass()
 	glUniformMatrix4fv(eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(V));
 	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
 	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+	glUniformMatrix4fv(rainEffect.get_uniform_location("VP"), 1, GL_FALSE, value_ptr(P*V));
 	glUniform1f(eff.get_uniform_location("grassHeight"), 6.5f);
 	glUniform1f(eff.get_uniform_location("windStrength"), windStrength);
 	glUniform3fv(eff.get_uniform_location("windDirectionIn"), 1, value_ptr(vec3(-1.0f, 0.0f, 0.0f)));
@@ -756,13 +767,20 @@ void renderSceneFirstPass()
 		lightProjectionMatrix
 		);
 	renderGrass();
+	int meshesNotRenderered = 0;
 	// Render meshes
 	for (auto &e : meshes) {
 		auto m = e.second;
 		auto meshName = e.first;
 		effect eff = effects[meshName];
-		renderMesh(m, meshName, eff, lightProjectionMatrix);
+		auto P = activeCam->get_projection();
+		auto M = m.get_transform().get_transform_matrix();
+		if(!renderMesh(m, meshName, eff, lightProjectionMatrix))
+		{
+			meshesNotRenderered++;
+		}
 	}
+	cout << meshesNotRenderered << endl;
 	if(shouldRenderRain)
 	{
 		//Render rain
@@ -821,7 +839,6 @@ void renderSceneWithMotionBlur()
 
 void renderSceneWithDepthOfField()
 {
-	// !!!!!!!!!!!!!!! SECOND PASS !!!!!!!!!!!!!!!!
 
 	frame_buffer last_pass = temp_frame;
 
@@ -853,7 +870,6 @@ void renderSceneWithDepthOfField()
 		last_pass = frames[i];
 
 	}
-	// !!!!!!!!!!!!!!! SCREEN PASS !!!!!!!!!!!!!!!!
 
 	// Set render target back to the screen
 	if (sepiaFilterEnabled)

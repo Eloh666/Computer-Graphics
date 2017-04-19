@@ -95,14 +95,12 @@ void main() {
 	if(fNewAlpha < fAlphaTest){
 		discard;
 	}
-	
-	colour = tex_colour*vec4(0, 0.43, 0, 1);
 
    // Calculate view direction
   vec3 view_dir = normalize(eye_pos - position);
 
   // Calculates direction ambient light
-  colour = calculate_direction(light, mat, normal, view_dir, colour);
+  colour = calculate_direction(light, mat, normal, view_dir, tex_colour);
 
   // Sum point lights
   for(int i = 0; i < points.length(); i++){
