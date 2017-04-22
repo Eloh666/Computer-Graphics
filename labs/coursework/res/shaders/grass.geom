@@ -1,12 +1,11 @@
 #version 440
 
-uniform mat4 MVP;
-uniform mat4 MV;
 uniform mat4 VP;
 uniform mat3 N;
 uniform float grassHeight;
 uniform float windStrength;
 uniform vec3 windDirectionIn;
+uniform vec3 eyePos;
 
 layout(points) in;
 layout(triangle_strip) out;
@@ -65,7 +64,8 @@ void main()
 {
 
 	bool shouldRender = shouldRenderMesh(VP, gl_in[0].gl_Position);
-	if(shouldRender){
+	bool fallBack = distance(eyePos, gl_in[0].gl_Position.xyz) < 150;
+	if(shouldRender || fallBack){
 		vec3 basePoint = gl_in[0].gl_Position.xyz;
 
 		float PIover180 = 3.1415/180.0;
@@ -114,28 +114,28 @@ void main()
 
 
 			// Grass patch top left vertex
-			gl_Position = MVP*vec4(topLeftVert, 1.0);
+			gl_Position = VP*vec4(topLeftVert, 1.0);
 			tex_coord = vec2(fTCStartX, 1.0);
 			transformed_normal = triangleNormal;
 			position = topLeftVert;
 			EmitVertex();
 		
 			// Grass patch bottom left vertex
-			gl_Position = MVP*vec4(bottomLeftVert, 1.0);
+			gl_Position = VP*vec4(bottomLeftVert, 1.0);
 			tex_coord = vec2(fTCStartX, 0.0);
 			transformed_normal = triangleNormal;
 			position = bottomLeftVert;
 			EmitVertex();
 		                               
 			// Grass patch top right vertex
-			gl_Position = MVP*vec4(topRightVert, 1.0);
+			gl_Position = VP*vec4(topRightVert, 1.0);
 			tex_coord = vec2(fTCEndX, 1.0);
 			transformed_normal = triangleNormal;
 			position = topRightVert;
 			EmitVertex();
 		
 			// Grass patch bottom right vertex
-			gl_Position = MVP*vec4(bottomRightVert, 1.0);
+			gl_Position = VP*vec4(bottomRightVert, 1.0);
 			tex_coord = vec2(fTCEndX, 0.0);
 			transformed_normal = triangleNormal;
 			position = bottomRightVert;

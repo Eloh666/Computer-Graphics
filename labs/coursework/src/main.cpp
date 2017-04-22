@@ -705,11 +705,10 @@ void renderGrass()
 	renderer::bind(eff);
 	auto V = activeCam->get_view();
 	auto P = activeCam->get_projection();
-	auto MVP = P * V;
-	glUniformMatrix4fv(eff.get_uniform_location("MV"), 1, GL_FALSE, value_ptr(V));
+	auto VP = P * V;
 	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
-	glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-	glUniformMatrix4fv(rainEffect.get_uniform_location("VP"), 1, GL_FALSE, value_ptr(P*V));
+	glUniformMatrix4fv(eff.get_uniform_location("VP"), 1, GL_FALSE, value_ptr(VP));
+	glUniform3fv(eff.get_uniform_location("eyePos"), 1, value_ptr(activeCam->get_position()));
 	glUniform1f(eff.get_uniform_location("grassHeight"), 6.5f);
 	glUniform1f(eff.get_uniform_location("windStrength"), windStrength);
 	glUniform3fv(eff.get_uniform_location("windDirectionIn"), 1, value_ptr(vec3(-1.0f, 0.0f, 0.0f)));
@@ -780,7 +779,6 @@ void renderSceneFirstPass()
 			meshesNotRenderered++;
 		}
 	}
-	cout << meshesNotRenderered << endl;
 	if(shouldRenderRain)
 	{
 		//Render rain
