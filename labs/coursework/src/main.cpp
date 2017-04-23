@@ -69,6 +69,7 @@ vector<mat4> treeTransforms(treesAmount);
 map<string, effect> shadowEffects;
 texture shadowMap;
 frame_buffer shadowBuffer;
+bool shouldRenderShadows;
 
 // frame data and post-processing
 frame_buffer frames[2];
@@ -331,12 +332,19 @@ void handleUserInput(float delta_time)
 		sepiaFilterEnabled = false;
 	}
 
-	// handles sepia like effect
+	// handles rain
 	if (glfwGetKey(renderer::get_window(), 'R')) {
 		shouldRenderRain = true;
 	}
 	if (glfwGetKey(renderer::get_window(), 'T')) {
 		shouldRenderRain = false;
+	}
+	// handles shadows
+	if (glfwGetKey(renderer::get_window(), 'O')) {
+		shouldRenderShadows = true;
+	}
+	if (glfwGetKey(renderer::get_window(), 'P')) {
+		shouldRenderShadows = false;
 	}
 }
 
@@ -522,8 +530,18 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 		);
 
 	// Bind shadow map texture - using available index
-	renderer::bind(shadowMap, 15);
+	if(shouldRenderShadows)
+	{
+		renderer::bind(shadowMap, 15);
+		
+	}
+	else
+	{
+		texture emptyTex;
+		renderer::bind(emptyTex, 15);
+	}
 	glUniform1i(eff.get_uniform_location("shadow_map"), 15);
+
 }
 
 bool renderMesh(mesh &m, string meshName, effect &eff, mat4 shadowVP)
@@ -639,6 +657,9 @@ void renderParticleRain()
 void renderGrass()
 {
 	effect eff = effects["grass"];
+	auto shadowView = shadowEyePos.get_view();
+	auto shadowProjection = shadowEyePos.get_projection();
+	auto shadowVP = shadowProjection * shadowView;
 	// Simply render the points.  All the work done in the geometry shader
 	renderer::bind(eff);
 	auto V = activeCam->get_view();
@@ -646,6 +667,7 @@ void renderGrass()
 	auto VP = P * V;
 	glUniformMatrix4fv(eff.get_uniform_location("P"), 1, GL_FALSE, value_ptr(P));
 	glUniformMatrix4fv(eff.get_uniform_location("VP"), 1, GL_FALSE, value_ptr(VP));
+	glUniformMatrix4fv(eff.get_uniform_location("lightVP"), 1, GL_FALSE, value_ptr(shadowVP));
 	glUniform3fv(eff.get_uniform_location("eyePos"), 1, value_ptr(activeCam->get_position()));
 	glUniform1f(eff.get_uniform_location("grassHeight"), 6.5f);
 	glUniform1f(eff.get_uniform_location("windStrength"), windStrength);
@@ -929,7 +951,10 @@ void renderSceneWithSepia()
 
 bool render() {
 
-	renderShadowsPass();
+	if(shouldRenderShadows)
+	{
+		renderShadowsPass();
+	}
 	renderSceneFirstPass();
 	if(motionBlurEnabled)
 	{

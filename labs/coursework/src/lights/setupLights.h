@@ -12,7 +12,7 @@ inline void initPointLights(vector<point_light> &points)
 	// boat lantern
 	points[0].set_position(vec3(131, 25, -90));
 	points[0].set_light_colour(vec4(1, 0.6, 0, 1));
-	points[0].set_range(75);
+	points[0].set_range(175);
 
 	// guardian gem point light
 	points[1].set_position(vec3(170, 230, 217.5));

@@ -17,6 +17,7 @@ inline effect createGrassEffect()
 	eff.add_shader("shaders/part_direction.frag", GL_FRAGMENT_SHADER);
 	eff.add_shader("shaders/part_point.frag", GL_FRAGMENT_SHADER);
 	eff.add_shader("shaders/part_spot.frag", GL_FRAGMENT_SHADER);
+	eff.add_shader("shaders/part_shadow.frag", GL_FRAGMENT_SHADER);
 	eff.add_shader("shaders/grass.frag", GL_FRAGMENT_SHADER);
 	// Build effect
 	eff.build();

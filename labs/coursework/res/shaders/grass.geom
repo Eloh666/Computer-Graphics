@@ -2,6 +2,7 @@
 
 uniform mat4 VP;
 uniform mat3 N;
+uniform mat4 lightVP;
 uniform float grassHeight;
 uniform float windStrength;
 uniform vec3 windDirectionIn;
@@ -14,6 +15,7 @@ layout(max_vertices = 16) out;
 layout (location = 0) out vec3 position;
 layout (location = 1) out vec3 transformed_normal;
 layout(location = 2) out vec2 tex_coord;
+layout(location = 9) out vec4 light_space_pos;
 
 bool shouldRenderMesh(mat4 VP, vec4 center);
 
@@ -118,6 +120,7 @@ void main()
 			tex_coord = vec2(fTCStartX, 1.0);
 			transformed_normal = triangleNormal;
 			position = topLeftVert;
+			light_space_pos = lightVP * vec4(position, 1);
 			EmitVertex();
 		
 			// Grass patch bottom left vertex
@@ -125,6 +128,7 @@ void main()
 			tex_coord = vec2(fTCStartX, 0.0);
 			transformed_normal = triangleNormal;
 			position = bottomLeftVert;
+			light_space_pos = lightVP * vec4(position, 1);
 			EmitVertex();
 		                               
 			// Grass patch top right vertex
@@ -132,6 +136,7 @@ void main()
 			tex_coord = vec2(fTCEndX, 1.0);
 			transformed_normal = triangleNormal;
 			position = topRightVert;
+			light_space_pos = lightVP * vec4(position, 1);
 			EmitVertex();
 		
 			// Grass patch bottom right vertex
@@ -139,6 +144,7 @@ void main()
 			tex_coord = vec2(fTCEndX, 0.0);
 			transformed_normal = triangleNormal;
 			position = bottomRightVert;
+			light_space_pos = lightVP * vec4(position, 1);
 			EmitVertex();
 
 			EndPrimitive();
