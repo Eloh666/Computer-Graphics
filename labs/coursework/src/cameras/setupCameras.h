@@ -10,10 +10,19 @@ float viewPortSize = 3000.0f;
 
 inline void setupFreeCam(free_camera &freeCam)
 {
-	freeCam.set_position(vec3(415, 65, -215));
-	freeCam.set_target(vec3(100, 100, 100));
+	freeCam.set_position(vec3(-400, 400, 250));
+	freeCam.set_target(vec3(0.0f, 0.0f, 1.0f));
 	freeCam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, viewPortSize);
 }
+
+inline void setupShadowCam(target_camera &cam, vec3 position, vec3 target)
+{
+	cam.set_position(vec3(-400, 700, 200));
+	cam.set_target((vec3(20, 74, 23)));
+	cam.set_projection(quarter_pi<float>(), renderer::get_screen_aspect(), 0.1f, viewPortSize);
+}
+
+
 
 inline void setupChaseCamera(chase_camera &camera, mesh modelToFollow)
 {

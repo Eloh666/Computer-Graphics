@@ -66,7 +66,7 @@ inline void initRainBuffers(GLuint &vao, GLuint &G_Position_buffer, GLuint &G_Ve
 inline effect createBasicRainEffect()
 {
 	effect eff;
-	eff.add_shader("shaders/rain.vert", GL_VERTEX_SHADER);
+	eff.add_shader("shaders/basicPosition.vert", GL_VERTEX_SHADER);
 	eff.add_shader("shaders/rain.geom", GL_GEOMETRY_SHADER);
 	eff.add_shader("shaders/frustumCulling.geom", GL_GEOMETRY_SHADER);
 	eff.add_shader("shaders/rain.frag", GL_FRAGMENT_SHADER);

@@ -11,7 +11,7 @@ using namespace glm;
 inline effect createGrassEffect()
 {
 	effect eff;
-	eff.add_shader("shaders/grass.vert", GL_VERTEX_SHADER);
+	eff.add_shader("shaders/basicPosition.vert", GL_VERTEX_SHADER);
 	eff.add_shader("shaders/grass.geom", GL_GEOMETRY_SHADER);
 	eff.add_shader("shaders/frustumCulling.geom", GL_GEOMETRY_SHADER);
 	eff.add_shader("shaders/part_direction.frag", GL_FRAGMENT_SHADER);

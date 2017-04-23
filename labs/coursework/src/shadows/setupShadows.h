@@ -16,3 +16,14 @@ inline effect createShadowEffect()
 	eff.build();
 	return eff;
 }
+
+inline effect createMultiInstanceShadowEffect()
+{
+
+	effect eff;
+	eff.add_shader("shaders/multi_instance_shadowShader.vert", GL_VERTEX_SHADER);
+	eff.add_shader("shaders/shadow_map.frag", GL_FRAGMENT_SHADER);
+
+	eff.build();
+	return eff;
+}

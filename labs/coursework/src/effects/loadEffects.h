@@ -8,6 +8,7 @@
 #include "simpleTexEff.h"
 #include "../meshes/grassMesh.h"
 #include "../postProcessing/postProcessing.h"
+#include "../shadows/setupShadows.h"
 
 
 using namespace std;
@@ -45,4 +46,11 @@ inline void loadEffects(map<string, effect> &effects)
 	effects["deadTree"] = createNormalMapEffect();
 	effects["waterLantern"] = createMultiLightEffect();
 	effects["grass"] = createGrassEffect();
+}
+
+inline void loadShadowEffects(map<string, effect> &effects)
+{
+	//post procesing
+	effects["regularShadowMesh"] = createShadowEffect();
+	effects["multiInstanceMesh"] = createMultiInstanceShadowEffect();
 }

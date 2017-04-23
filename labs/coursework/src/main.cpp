@@ -24,6 +24,7 @@ vector<spot_light> spots(5);
 
 // cameras
 free_camera freeCam;
+target_camera shadowEyePos;
 camera *activeCam;
 vector<target_camera> targetCameras(6);
 chase_camera chaseCamera;
@@ -65,9 +66,9 @@ int treesAmount = 40;
 vector<mat4> treeTransforms(treesAmount);
 
 // shadows
-shadow_map shadow;
-effect shadowEff;
-bool shouldRenderShadows;
+map<string, effect> shadowEffects;
+texture shadowMap;
+frame_buffer shadowBuffer;
 
 // frame data and post-processing
 frame_buffer frames[2];
@@ -103,6 +104,7 @@ bool load_content()
 {
 	// loads the effects
 	loadEffects(effects);
+	loadShadowEffects(shadowEffects);
 
 	// load the meshes
 	loadMeshes(meshes);
@@ -123,6 +125,7 @@ bool load_content()
 
 	// Set camera properties
 	setupFreeCam(freeCam);
+	setupShadowCam(shadowEyePos, meshes["moon"].get_transform().position, meshes["boat"].get_transform().position);
 	setupTargetCameras(targetCameras, meshes);
 	setupChaseCamera(chaseCamera, meshes["amillary"]);
 	activeCam = &freeCam;
@@ -135,6 +138,8 @@ bool load_content()
 	frames[1] = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 	// Create a temp framebuffer
 	temp_frame = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
+	// Create a shadows frame buffer
+	shadowBuffer = frame_buffer(renderer::get_screen_width(), renderer::get_screen_height());
 
 	initRainPositions(MAX_PARTICLES, positions, velocitys);
 	initRainBuffers(vao, G_Position_buffer, G_Velocity_buffer, MAX_PARTICLES, positions, velocitys);
@@ -146,11 +151,6 @@ bool load_content()
 
 	// tree positions
 	generateTreesTransforms(treeTransforms);
-
-	// Create shadow map- use screen size
-	shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
-	shadowEff = createMultiLightEffect();
-	shouldRenderShadows = false;
 
 	// Generates the terrain
 	auto width = 30;
@@ -217,16 +217,6 @@ void handleUserInput(float delta_time)
 		activeCam = &chaseCamera;
 		targetOrChaseCamera = true;
 		selectedTargetPos = meshes["amillary"].get_transform().position;
-	}
-
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_O)) {
-		shadow = shadow_map(renderer::get_screen_width(), renderer::get_screen_height());
-		shouldRenderShadows = false;
-		DOFEnabled = false;
-	}
-
-	if (glfwGetKey(renderer::get_window(), GLFW_KEY_P)) {
-		shouldRenderShadows = true;
 	}
 
 	if (glfwGetKey(renderer::get_window(), GLFW_KEY_L)) {
@@ -348,8 +338,6 @@ void handleUserInput(float delta_time)
 	if (glfwGetKey(renderer::get_window(), 'T')) {
 		shouldRenderRain = false;
 	}
-
-
 }
 
 bool update(float delta_time) {
@@ -369,6 +357,7 @@ bool update(float delta_time) {
 	waterDelta += vec2(delta_time * 0.05, delta_time * 0.05);
 
 	// Update the camera
+	shadowEyePos.update(delta_time);
 	activeCam->update(delta_time);
 
 	// Rotates the amillary around the statue
@@ -392,19 +381,6 @@ bool update(float delta_time) {
 
 	// Setup and rotation for amillary transforms
 	generateAmillaryRings(amillaryTransforms, meshes["amillary"].get_transform().get_transform_matrix(), rotationAngle * 0.5);
-
-	// updates shadows status, temporarily behind a switch
-	if (shouldRenderShadows)
-	{
-		spots[3].set_range(500);
-		// updates the projection of the light
-		shadow.light_position = spots[3].get_position();
-		shadow.light_dir = spots[3].get_direction();
-	}
-	else
-	{
-		spots[3].set_range(0);
-	}
 
 	// manages the rushing of the wind
 	if(windStrength >= 30.0)
@@ -546,11 +522,11 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 		);
 
 	// Bind shadow map texture - using available index
-	renderer::bind(shadow.buffer->get_depth(), 15);
+	renderer::bind(shadowMap, 15);
 	glUniform1i(eff.get_uniform_location("shadow_map"), 15);
 }
 
-bool renderMesh(mesh &m, string meshName, effect &eff, mat4 lightProjectionMatrix)
+bool renderMesh(mesh &m, string meshName, effect &eff, mat4 shadowVP)
 {
 	auto M = m.get_transform().get_transform_matrix();
 	auto V = activeCam->get_view();
@@ -569,7 +545,7 @@ bool renderMesh(mesh &m, string meshName, effect &eff, mat4 lightProjectionMatri
 			value_ptr(MVP));
 		glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
 
-		auto lightMVP = lightProjectionMatrix * shadow.get_view() * M;
+		auto lightMVP = shadowVP * M;
 		// Set light transform
 		glUniformMatrix4fv(eff.get_uniform_location("lightMVP"),
 			1,
@@ -587,7 +563,6 @@ bool renderMesh(mesh &m, string meshName, effect &eff, mat4 lightProjectionMatri
 
 void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, effect eff, string name, mat4 lightProjectionMatrix)
 {
-
 	// sets up the buffer
 	GLuint buffer;
 	glGenBuffers(1, &buffer);
@@ -607,51 +582,14 @@ void renderInstanciatedMesh(mesh &model, int amount, vector<mat4> &transforms, e
 	glUniformMatrix4fv(eff.get_uniform_location("projection"), 1, GL_FALSE, value_ptr(P));
 
 	setupGeneralBindings(model, name, eff);
-	auto lightMVPPartial = lightProjectionMatrix * shadow.get_view();
 	// Set light transform
 	glUniformMatrix4fv(eff.get_uniform_location("lightMVPPartial"),
 		1,
 		GL_FALSE,
-		value_ptr(lightMVPPartial));
+		value_ptr(lightProjectionMatrix));
 
 	setupGeneralBindings(model, name, eff);
 	renderer::render_instancieted(model, amount);
-}
-
-void renderShadows(mat4 lightProjectionMatrix)
-{
-	// Set render target to shadow map
-	renderer::set_render_target(shadow);
-	// Clear depth buffer bit
-	glClear(GL_DEPTH_BUFFER_BIT);
-	// Set render mode to cull face
-	glCullFace(GL_FRONT);
-
-
-	// Bind shader
-	renderer::bind(shadowEff);
-	// Render meshes
-	for (auto &e : meshes) {
-		auto m = e.second;
-		// Create MVP matrix
-		auto M = m.get_transform().get_transform_matrix();
-		// *********************************
-		// View matrix taken from shadow map
-		auto V = shadow.get_view();
-		// *********************************
-		auto MVP = lightProjectionMatrix * V * M;
-		// Set MVP matrix uniform
-		glUniformMatrix4fv(shadowEff.get_uniform_location("MVP"), // Location of uniform
-			1,                                      // Number of values - 1 mat4
-			GL_FALSE,                               // Transpose the matrix?
-			value_ptr(MVP));                        // Pointer to matrix data
-													// Render mesh
-		renderer::render(m);
-	}
-	// Set render target back to the screen
-	renderer::set_render_target();
-	// Set cull face to back
-	glCullFace(GL_BACK);
 }
 
 void renderParticleRain()
@@ -718,14 +656,76 @@ void renderGrass()
 	glEnable(GL_CULL_FACE);
 }
 
+void renderInstanciatedShadowMesh(mesh &model, int amount, vector<mat4> &transforms, effect &eff, string name, mat4 &shadowView, mat4 &shadowProjection)
+{
+	GLuint buffer;
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &transforms[0], GL_STATIC_DRAW);
+	GLuint VAO = model.get_geometry().get_array_object();
+	glBindVertexArray(VAO);
+	renderer::bind(eff);
+	auto V = activeCam->get_view();
+	glUniformMatrix4fv(eff.get_uniform_location("view"), 1, GL_FALSE, value_ptr(shadowView));
+	auto P = activeCam->get_projection();
+	glUniformMatrix4fv(eff.get_uniform_location("projection"), 1, GL_FALSE, value_ptr(shadowProjection));
+
+	renderer::render_instancieted(model, amount);
+}
+
+void renderShadowsPass()
+{
+	auto shadowView = shadowEyePos.get_view();
+	auto shadowProjection = shadowEyePos.get_projection();
+	auto shadowVP = shadowProjection * shadowView;
+	renderer::set_render_target(shadowBuffer);
+	renderer::clear();
+	renderer::bind(shadowEffects["regularShadowMesh"]);
+
+	for (auto &e : meshes) {
+			auto m = e.second;
+			auto M = m.get_transform().get_transform_matrix();
+			auto LVP = shadowVP * M;
+			glUniformMatrix4fv(shadowEffects["regularShadowMesh"].get_uniform_location("LVP"), 1, GL_FALSE, value_ptr(LVP));
+			renderer::render(m);
+	}
+	
+	renderInstanciatedShadowMesh(
+		specialRenderMeshes["crystal"],
+		rotatingFloaterNumDebris,
+		generalDebrisRotatingDebris,
+		shadowEffects["multiInstanceMesh"],
+		"crystal",
+		shadowView,
+		shadowProjection
+		);
+	renderInstanciatedShadowMesh(
+		specialRenderMeshes["amillaryRing"],
+		amillaryTransforms.size(),
+		amillaryTransforms,
+		shadowEffects["multiInstanceMesh"],
+		"amillary",
+		shadowView,
+		shadowProjection
+		);
+	renderInstanciatedShadowMesh(
+		specialRenderMeshes["trees"],
+		treesAmount,
+		treeTransforms,
+		shadowEffects["multiInstanceMesh"],
+		"tree",
+		shadowView,
+		shadowProjection
+		);
+	glClearColor(0.0, 0.0, 0.0, 1.0);
+	shadowMap = shadowBuffer.get_frame();
+}
+
 void renderSceneFirstPass()
 {
-	mat4 lightProjectionMatrix = perspective<float>(90.f, renderer::get_screen_aspect(), 0.1f, 3000.f);
-	if (shouldRenderShadows)
-	{
-		// Render Shadows
-		renderShadows(lightProjectionMatrix);
-	}
+	auto shadowView = shadowEyePos.get_view();
+	auto shadowProjection = shadowEyePos.get_projection();
+	auto shadowVP = shadowProjection * shadowView;
 	if(motionBlurEnabled || DOFEnabled || sepiaFilterEnabled)
 	{
 		// select render target
@@ -747,7 +747,7 @@ void renderSceneFirstPass()
 		generalDebrisRotatingDebris,
 		effects["multipleInstance"],
 		"crystal",
-		lightProjectionMatrix
+		shadowVP
 		);
 	renderInstanciatedMesh(
 		specialRenderMeshes["amillaryRing"],
@@ -755,7 +755,7 @@ void renderSceneFirstPass()
 		amillaryTransforms,
 		effects["multipleInstance"],
 		"amillary",
-		lightProjectionMatrix
+		shadowVP
 		);
 	renderInstanciatedMesh(
 		specialRenderMeshes["trees"],
@@ -763,7 +763,7 @@ void renderSceneFirstPass()
 		treeTransforms,
 		effects["trees"],
 		"tree",
-		lightProjectionMatrix
+		shadowVP
 		);
 	renderGrass();
 	int meshesNotRenderered = 0;
@@ -774,7 +774,7 @@ void renderSceneFirstPass()
 		effect eff = effects[meshName];
 		auto P = activeCam->get_projection();
 		auto M = m.get_transform().get_transform_matrix();
-		if(!renderMesh(m, meshName, eff, lightProjectionMatrix))
+		if(!renderMesh(m, meshName, eff, shadowVP))
 		{
 			meshesNotRenderered++;
 		}
@@ -929,6 +929,7 @@ void renderSceneWithSepia()
 
 bool render() {
 
+	renderShadowsPass();
 	renderSceneFirstPass();
 	if(motionBlurEnabled)
 	{
