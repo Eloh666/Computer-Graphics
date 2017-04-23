@@ -6,6 +6,6 @@ layout(location = 0) out vec4 colour;
 
 void main () {
 	float range = vertexPos.x * vertexPos.x +  vertexPos.y * vertexPos.y +  vertexPos.z * vertexPos.z;
-	range /= 3000000.0;
+	range /= 1000000.0;
 	colour = vec4(vec3(range), 1.0);
 }

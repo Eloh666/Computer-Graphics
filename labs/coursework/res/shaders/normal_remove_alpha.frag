@@ -56,6 +56,7 @@ vec4 calculate_spot(in spot_light spot, in material mat, in vec3 position, in ve
                     in vec4 tex_colour);
 vec3 calc_normal(in vec3 normal, in vec3 tangent, in vec3 binormal, in sampler2D normal_map, in vec2 tex_coord);
 vec4 removeAlpha(in vec4 tex_colour, in sampler2D blendMap, in vec2 tex_coord);
+float calculate_shadow(in sampler2D shadow_map, in vec4 light_space_pos);
 
 // Directional light information
 uniform directional_light light;
@@ -77,6 +78,9 @@ uniform sampler2D blendMap;
 // Normal map to sample from
 uniform sampler2D normal_map;
 
+// Shadow map to sample from
+uniform sampler2D shadow_map;
+
 // Incoming position
 layout(location = 0) in vec3 position;
 // Incoming normal
@@ -87,6 +91,8 @@ layout(location = 2) in vec2 tex_coord;
 layout(location = 3) in vec3 tangent;
 // Incoming binormal
 layout(location = 4) in vec3 binormal;
+// Incoming light space position
+layout(location = 9) in vec4 light_space_pos;
 
 // Outgoing colour
 layout(location = 0) out vec4 colour;
@@ -117,6 +123,10 @@ void main() {
   colour = removeAlpha(colour, blendMap, tex_coord);
   if(colour.a < 0.5){
 	discard;
+  }
+  else{
+	float shadeFactor = calculate_shadow(shadow_map, light_space_pos);
+	colour = colour * shadeFactor;
   }
 
 }

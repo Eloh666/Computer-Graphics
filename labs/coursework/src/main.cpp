@@ -533,14 +533,15 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 	if(shouldRenderShadows)
 	{
 		renderer::bind(shadowMap, 15);
-		
+		glUniform1i(eff.get_uniform_location("shadow_map"), 15);
 	}
 	else
 	{
 		texture emptyTex;
 		renderer::bind(emptyTex, 15);
+		glUniform1i(eff.get_uniform_location("shadow_map"), 15);
 	}
-	glUniform1i(eff.get_uniform_location("shadow_map"), 15);
+	
 
 }
 

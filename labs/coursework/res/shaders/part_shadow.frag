@@ -16,7 +16,7 @@ float calculate_shadow(in sampler2D shadow_map, in vec4 light_space_pos) {
 		light_space_pos.y * light_space_pos.y +
 		light_space_pos.z * light_space_pos.z
 	);
-	range /= 3000000.0;
+	range /= 1000000.0;
     if (depth == 0.0 || depth == 1.0) {
         return 1.0;
     }
