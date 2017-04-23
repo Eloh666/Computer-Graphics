@@ -1,4 +1,5 @@
 #pragma once
+
 #include <glm\glm.hpp>
 #include <graphics_framework.h>
 #include "meshes/terrainMesh.h"
@@ -69,7 +70,6 @@ vector<mat4> treeTransforms(treesAmount);
 map<string, effect> shadowEffects;
 texture shadowMap;
 frame_buffer shadowBuffer;
-bool shouldRenderShadows;
 
 // frame data and post-processing
 frame_buffer frames[2];
@@ -339,17 +339,9 @@ void handleUserInput(float delta_time)
 	if (glfwGetKey(renderer::get_window(), 'T')) {
 		shouldRenderRain = false;
 	}
-	// handles shadows
-	if (glfwGetKey(renderer::get_window(), 'O')) {
-		shouldRenderShadows = true;
-	}
-	if (glfwGetKey(renderer::get_window(), 'P')) {
-		shouldRenderShadows = false;
-	}
 }
 
 bool update(float delta_time) {
-
 	// update rain data
 	renderer::bind(compute_eff);
 	glUniform1f(compute_eff.get_uniform_location("delta_time"), delta_time);
@@ -528,19 +520,8 @@ void setupGeneralBindings(mesh &m, string meshName, effect &eff)
 		1,
 		value_ptr(activeCam->get_position())
 		);
-
-	// Bind shadow map texture - using available index
-	if(shouldRenderShadows)
-	{
-		renderer::bind(shadowMap, 15);
-		glUniform1i(eff.get_uniform_location("shadow_map"), 15);
-	}
-	else
-	{
-		texture emptyTex;
-		renderer::bind(emptyTex, 15);
-		glUniform1i(eff.get_uniform_location("shadow_map"), 15);
-	}
+	renderer::bind(shadowMap, 15);
+	glUniform1i(eff.get_uniform_location("shadow_map"), 15);
 	
 
 }
@@ -551,12 +532,9 @@ bool renderMesh(mesh &m, string meshName, effect &eff, mat4 shadowVP)
 	auto V = activeCam->get_view();
 	auto P = activeCam->get_projection();
 	auto MVP = P * V * M;
-	//if(shouldRenderMesh(P*V, radiuses[meshName], m.get_transform().position, meshName))
 	if(shouldRenderMesh(P*V, m.get_transform().position, radiuses[meshName]))
 	{
 		renderer::bind(eff);
-		// Create MVP matrix
-
 		// Set MVP matrix uniform
 		glUniformMatrix4fv(eff.get_uniform_location("MVP"),
 			1,
@@ -637,9 +615,15 @@ void renderParticleRain()
 	renderer::bind(textures["clearWater"], 0);
 	glUniform1i(effects["basicTexturing"].get_uniform_location("tex"), 0);
 	glUniform3fv(rainEffect.get_uniform_location("eyePos"), 1, value_ptr(activeCam->get_position()));
+	#ifdef _DEBUG
+		glUniform1i(rainEffect.get_uniform_location("forceRender"), 1);
+	#else
+		glUniform1i(rainEffect.get_uniform_location("forceRender"), 0);
+	#endif
 	// Set MVP matrix uniform
 	glUniformMatrix4fv(rainEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 	glUniformMatrix4fv(rainEffect.get_uniform_location("VP"), 1, GL_FALSE, value_ptr(P*V));
+
 
 	// Bind position buffer as GL_ARRAY_BUFFER
 	glBindBuffer(GL_ARRAY_BUFFER, G_Position_buffer);
@@ -952,10 +936,7 @@ void renderSceneWithSepia()
 
 bool render() {
 
-	if(shouldRenderShadows)
-	{
-		renderShadowsPass();
-	}
+	renderShadowsPass();
 	renderSceneFirstPass();
 	if(motionBlurEnabled)
 	{

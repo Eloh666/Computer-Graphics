@@ -12,7 +12,7 @@ inline mesh createVioletTreeMesh()
 {
 	auto tree = mesh(geometry("models/violet.obj"));
 	tree.get_transform().scale = vec3(2.0, 1.0, 2.0);
-	tree.get_transform().translate(vec3(20, 74, 23));
+	tree.get_transform().translate(vec3(0, 74, 43));
 	tree.get_material().set_specular(vec4(1, 0.75, 1, 1));
 	tree.get_material().set_shininess(25.0f);
 	tree.get_material().set_shininess(65.0f);

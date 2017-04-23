@@ -1,6 +1,7 @@
 #version 440
 uniform mat4 MVP;
 uniform mat4 VP;
+uniform int forceRender;
 
 layout (location = 0) out vec2 tex_coord;
 layout(points) in;
@@ -19,7 +20,8 @@ void main()
 {
 	vec4 position = gl_in[0].gl_Position;
 	bool shouldRender = shouldRenderMesh(VP, position);
-	if(shouldRender){
+	bool enforce = forceRender == 1;
+	if(shouldRender || true){
 		vec3 vertices[4] = vec3[](
 			vec3(-6.1, -10.0, 0.0),
 			vec3(0.1, 10.0, 0.0),
